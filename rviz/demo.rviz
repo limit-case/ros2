@@ -1,0 +1,55 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Fixed Frame: camera_link
+    Frame Rate: 30
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Raw cloud (grey)
+      Enabled: true
+      Topic: {Value: /demo/raw_points, Depth: 2, Reliability Policy: Best Effort}
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: FlatColor
+      Color: 130; 130; 130
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Filtered cloud (white)
+      Enabled: true
+      Topic: {Value: /demo/filtered_points, Depth: 2, Reliability Policy: Best Effort}
+      Style: Points
+      Size (Pixels): 4
+      Color Transformer: FlatColor
+      Color: 255; 255; 255
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Suspected obstacles (red)
+      Enabled: true
+      Topic: {Value: /limit_case/suspected_obstacles, Depth: 2, Reliability Policy: Reliable}
+      Style: Points
+      Size (Pixels): 4
+      Color Transformer: FlatColor
+      Color: 255; 0; 0
+    - Class: rviz_default_plugins/Image
+      Name: Mask
+      Enabled: false
+      Topic: {Value: /limit_case/mask, Depth: 2, Reliability Policy: Reliable}
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Target Frame: <Fixed Frame>
+      Distance: 1.8
+      Focal Point: {X: 0.8, Y: 0, Z: 0}
+      Pitch: 0.4
+      Yaw: 2.6
+Window Geometry:
+  Height: 720
+  Width: 1280
+  X: 0
+  Y: 0
+  Hide Left Dock: false
+  Hide Right Dock: true

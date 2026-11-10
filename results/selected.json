@@ -1,0 +1,14 @@
+{
+  "variant": "c_strict",
+  "min_basin_depth_m": 0.01,
+  "min_basin_depth_rel": 0.015,
+  "confidence_threshold": 0.3,
+  "boundary_verify": "true",
+  "min_nearer_boundary_frac": 0.1,
+  "downsample": 3,
+  "wrong_removed": 14.559890437182117,
+  "correct_lost": 4.715567375258198,
+  "outside_flagged": 6.012557344386194,
+  "latency_ms_mean": 7.474526011560693,
+  "latency_ms_p95": 8.674000000000001
+}

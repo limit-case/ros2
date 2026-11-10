@@ -1,0 +1,15 @@
+.arena/
+build/
+install/
+log/
+*.mcap
+.DS_Store
+demo_bag/
+
+# private notes
+CLAUDE.md
+docs/rev3_report.md
+docs/launch_posts.md
+docs/video_script.md
+docs/DECISIONS.md
+.claude/

@@ -1,0 +1,9 @@
+{
+ "name": "limit_case_ros2",
+ "build": {
+  "dockerfile": "../docker/Dockerfile",
+  "target": "base"
+ },
+ "workspaceMount": "source=${localWorkspaceFolder},target=/ws/src/limit_case_ros2,type=bind",
+ "workspaceFolder": "/ws/src/limit_case_ros2"
+}

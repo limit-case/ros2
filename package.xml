@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>limit_case_ros2</name>
+  <version>0.1.0</version>
+  <description>Detect silent depth failures on transparent objects.</description>
+  <maintainer email="yajan.adh@gmail.com">Yajan</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend><depend>rclcpp_components</depend><depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend><depend>image_transport</depend><depend>message_filters</depend>
+  <depend>diagnostic_updater</depend><depend>diagnostic_msgs</depend><depend>libopencv-dev</depend>
+  <test_depend>ament_cmake_gtest</test_depend><test_depend>launch_testing_ament_cmake</test_depend><test_depend>launch_testing</test_depend><test_depend>launch_ros</test_depend><test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_cmake_clang_format</test_depend><test_depend>ament_cmake_cpplint</test_depend>
+  <test_depend>ament_cmake_xmllint</test_depend><test_depend>ament_cmake_flake8</test_depend>
+  <exec_depend>depth_image_proc</exec_depend><exec_depend>rviz2</exec_depend><exec_depend>ros2bag</exec_depend><exec_depend>rosbag2_storage_mcap</exec_depend><exec_depend>launch_ros</exec_depend><exec_depend>tf2_ros</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

@@ -1,0 +1,2 @@
+name,split,tol,images,mask_pixels,correct_pct,missing_pct,wrong_pct,wrong_too_far_pct,wrong_among_returned_raw,wrong_among_returned_after,wrong_removed,correct_lost,outside_flagged,latency_ms_mean,latency_ms_p95,resolution,params,overrides
+cg_val_d435_640x480_ds2,real-val/d435,rel5%,173,2115976,29.329633228354197,39.730507340347906,30.939859431297897,99.81869004704589,51.33585511664816,48.58609701199169,14.669609580252947,4.745829895844076,5.299111331656737,5.292462427745665,6.0628,640x480,config/realsense_d435.yaml,downsample=2

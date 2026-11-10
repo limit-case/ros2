@@ -1,0 +1,2 @@
+name,split,tol,images,mask_pixels,correct_pct,missing_pct,wrong_pct,wrong_too_far_pct,wrong_among_returned_raw,wrong_among_returned_after,wrong_removed,correct_lost,outside_flagged,latency_ms_mean,latency_ms_p95,resolution,params,overrides
+cg_val_d435_ablation_skip_defaults,real-val/d435,rel5%,173,6347704,29.340167720486022,39.71683304703559,30.94299923247839,99.81600370640015,51.32941880213673,48.90652368021303,13.469811676178741,4.661981382357537,5.854438861633409,7.866867052023122,9.1122,native,config/default.yaml,downsample=3

@@ -1,0 +1,29 @@
+# Example Nav2 local costmap with the glass filter. Merge into your nav2_params.yaml.
+# Why two sources: the filtered depth cloud may mark and clear. The glass cloud may ONLY mark.
+# If it could clear, the next camera frame, in which the glass reads as far-away free space,
+# would erase the glass cells again, and the robot would drive into it.
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      plugins: ["obstacle_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"   # or nav2_costmap_2d::VoxelLayer
+        enabled: true
+        observation_sources: depth_cloud glass_cloud
+        depth_cloud:
+          topic: /demo/filtered_points             # point_cloud_xyz of /limit_case/depth/filtered
+          data_type: PointCloud2
+          marking: true
+          clearing: true
+          min_obstacle_height: 0.05
+          max_obstacle_height: 1.5
+          obstacle_max_range: 3.5
+          raytrace_max_range: 4.0
+        glass_cloud:
+          topic: /limit_case/suspected_obstacles
+          data_type: PointCloud2
+          marking: true
+          clearing: false
+          min_obstacle_height: 0.05
+          max_obstacle_height: 1.5
+          obstacle_max_range: 3.5
