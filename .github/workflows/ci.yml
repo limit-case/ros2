@@ -29,4 +29,5 @@ jobs:
         with:
           package-name: limit_case_ros2
           target-ros2-distro: ${{ matrix.ros }}
+          import-token: ${{ secrets.GITHUB_TOKEN }}
           # colcon build + colcon test (gtests, launch test, ament_lint_auto linters) + test-result
