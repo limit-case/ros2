@@ -31,6 +31,7 @@ def scene_mm():
 
 
 class TestOutputs(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         rclpy.init()
