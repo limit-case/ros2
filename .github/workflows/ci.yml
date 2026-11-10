@@ -10,21 +10,32 @@ concurrency:
 
 jobs:
   build-and-test:
-    # Each ROS 2 distro is only supported on its own Ubuntu release.
-    runs-on: ${{ matrix.os }}
+    # ROS comes preinstalled in the official image, so nothing installs ROS on the runner.
+    runs-on: ubuntu-latest
+    container:
+      image: ros:${{ matrix.ros }}-ros-base
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - ros: jazzy
-            os: ubuntu-24.04
-          - ros: humble
-            os: ubuntu-22.04
+        ros: [jazzy, humble]
     steps:
       - uses: actions/checkout@v4
-      - uses: ros-tooling/setup-ros@v0.7
+
+      # The image deletes downloaded .debs after every apt call. Keep them so they can be cached.
+      - name: Keep apt downloads for caching
+        run: |
+          rm -f /etc/apt/apt.conf.d/docker-clean
+          echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/99keep-cache
+          apt-get update
+      - name: Cache apt packages
+        uses: actions/cache@v4
         with:
-          required-ros-distributions: ${{ matrix.ros }}
+          path: /var/cache/apt/archives
+          key: apt-${{ matrix.ros }}-${{ hashFiles('package.xml') }}
+          restore-keys: apt-${{ matrix.ros }}-
+
+      # No required-ros-distributions: ROS is already in the container, this only sets up colcon/rosdep.
+      - uses: ros-tooling/setup-ros@v0.7
       - uses: ros-tooling/action-ros-ci@v0.4
         with:
           package-name: limit_case_ros2
