@@ -1,5 +1,7 @@
 # limit_case_ros2
 
+[![ci](https://github.com/limit-case/ros2/actions/workflows/ci.yml/badge.svg)](https://github.com/limit-case/ros2/actions/workflows/ci.yml)
+
 **Catch depth cameras lying about glass.**
 
 <!-- TODO(owner, Day 8): demo GIF here: raw cloud passing through glass -> filtered -> red suspected obstacles.
