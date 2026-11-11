@@ -48,7 +48,7 @@ install(TARGETS glass_filter_component
 install(TARGETS filter_cli RUNTIME DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY config launch rviz nav2 DESTINATION share/${PROJECT_NAME})
-install(PROGRAMS scripts/eval_glassbench.py scripts/clearGrasp_to_bag.py
+install(PROGRAMS scripts/eval_glassbench.py scripts/clearGrasp_to_bag.py scripts/gt_error_cloud.py
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
@@ -62,6 +62,9 @@ if(BUILD_TESTING)
 
   find_package(launch_testing_ament_cmake REQUIRED)
   add_launch_test(test/test_launch.py)
+
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_gt_error_cloud test/test_gt_error_cloud.py)
 endif()
 
 ament_export_include_directories(include)
