@@ -1,0 +1,18 @@
+{
+  "rule": "maximise wrong_removed subject to correct_lost <= 5% on ClearGrasp D435 val (rel5% tolerance, mask region, pooled pixels), over results/rgb_proposal_tune_val.csv",
+  "tie_break": "ring 5 px with min_basin_depth_m 0.03 ties across min_basin_depth_rel 0.0 / 0.015 / 0.03; take 0.015, the v0.1 value",
+  "approved": "2026-11-12, before any test-set run",
+  "selected": {
+    "ring_px": 5,
+    "min_basin_depth_m": 0.03,
+    "min_basin_depth_rel": 0.015
+  },
+  "also_reported": {
+    "name": "v0.1 thresholds, untuned",
+    "ring_px": 15,
+    "min_basin_depth_m": 0.01,
+    "min_basin_depth_rel": 0.015
+  },
+  "test_runs": "real-test/d435 and real-test/d415, once per configuration; no change to the method afterwards",
+  "mask_network": "ClearGrasp mask_segmentation/checkpoint_mask.pth (sha256 e8d36e4b...ff1863), 256x256 nearest resize, argmax; trained on synthetic images only"
+}

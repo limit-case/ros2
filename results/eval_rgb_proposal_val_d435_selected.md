@@ -1,3 +1,3 @@
 | Set | Images | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged | Latency mean / p95 (ms) |
 |---|---|---|---|---|---|---|
-| rgb_proposal_val_d435 (rel5%) | 173 | 51.3% -> 39.0% | 44.5% | 8.6% | 0.3% | nan / nan |
+| rgb_proposal_val_d435_selected (rel5%) | 173 | 51.3% -> 43.9% | 29.3% | 4.7% | 0.2% | nan / nan |

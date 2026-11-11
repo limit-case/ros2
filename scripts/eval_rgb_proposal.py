@@ -19,8 +19,18 @@ mask-segmentation network through GlassBench (tools/flagging/flag_eval.py; needs
   eval_rgb_proposal.py --split real-val/d435 --make-preds --pred-dir out/rgb_masks/real-val/d435
   eval_rgb_proposal.py --split real-val/d435 --pred-dir out/rgb_masks/real-val/d435
 
---proposal gt uses the ground-truth mask instead (an upper bound on what a perfect RGB mask
-would give). Val only until a selection rule is approved; test splits need --allow-test.
+--proposal gt uses the ground-truth mask instead: the "GT mask reference". It is a reference
+point, not an upper bound: the predicted mask over-covers the objects (column
+proposal_area_vs_gt), so its ring sits farther out on cleaner background, and on D435 val it
+removes more wrong pixels than the GT mask does.
+
+Selection rule (approved 2026-11-12, results/rgb_proposal_selected.json): maximise wrong removed
+subject to correct lost <= 5% on D435 val over the grid of tune_rgb_proposal.py. Test splits
+need --allow-test and are run once each, with no change to the method afterwards.
+
+Mask network provenance: ClearGrasp mask_segmentation checkpoint, trained on synthetic images
+only (its config.yaml; the real D435 val images were evaluated during its training, never
+trained on; the real test images are not referenced).
 """
 import argparse
 import os
@@ -127,7 +137,7 @@ def main():
     name = a.name or 'rgb_proposal_' + a.split.replace('real-', '').replace('/', '_')
 
     rows = []
-    cover = {'wrong': 0, 'wrong_in_pred': 0, 'pred': 0, 'inter': 0, 'union': 0}
+    cover = {'wrong': 0, 'wrong_in_pred': 0, 'pred': 0, 'gt': 0, 'inter': 0, 'union': 0}
     for _, split, sid in items:
         s = loader.load_cleargrasp(split, sid)
         if a.proposal == 'gt':
@@ -149,6 +159,7 @@ def main():
                 cover['wrong_in_pred'] += c0['wrong_flagged']
             rows.append(dict(id=s['id'], region=region, tol=a.tol, **c))
         cover['pred'] += int(pred.sum())
+        cover['gt'] += int(s['mask'].sum())
         cover['inter'] += int((pred & s['mask']).sum())
         cover['union'] += int((pred | s['mask']).sum())
 
@@ -158,11 +169,13 @@ def main():
         ring_px=a.ring_px, min_ring_px=a.min_ring_px, per_region=not a.whole_mask,
         min_basin_depth_m=min_m, min_basin_depth_rel=min_rel,
         proposal_iou=100.0 * cover['inter'] / cover['union'] if cover['union'] else float('nan'),
+        proposal_area_vs_gt=100.0 * cover['pred'] / cover['gt'] if cover['gt'] else float('nan'),
         wrong_inside_proposal=(100.0 * cover['wrong_in_pred'] / cover['wrong']
                                if cover['wrong'] else float('nan')))
     write_outputs(rows, summ, Path(a.out), name)
     print(markdown(summ))
-    print(f"proposal IoU {summ['proposal_iou']:.1f}%, wrong pixels inside the proposal "
+    print(f"proposal IoU {summ['proposal_iou']:.1f}%, area vs GT mask "
+          f"{summ['proposal_area_vs_gt']:.1f}%, wrong pixels inside the proposal "
           f"{summ['wrong_inside_proposal']:.1f}%")
 
 
