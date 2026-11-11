@@ -2,7 +2,8 @@
 
   ros2 launch limit_case_ros2 demo_bag.launch.py bag:=/path/to/demo_bag
 Cloud colours (rviz/demo.rviz): raw = grey, filtered = white, suspected obstacles = red.
-Arguments: bag (required), rviz:=false for headless runs, loop:=false to play the bag once.
+Arguments: bag (required), rviz:=false for headless runs, loop:=false to play the bag once,
+play_duration:=7.9 to play only the first two scenes (4 s each; needs Jazzy or newer).
 
   ros2 launch limit_case_ros2 demo_bag.launch.py bag:=/path/to/demo_bag gt:=true
 Ground-truth error view instead of the filter (rviz/demo_gt.rviz): the raw cloud coloured by
@@ -14,27 +15,28 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 
 
+def play_bag(context):
+    """`ros2 bag play`, looping unless loop:=false, optionally only the first play_duration s."""
+    cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag').perform(context)]
+    if LaunchConfiguration('loop').perform(context) == 'true':
+        cmd.append('--loop')
+    duration = LaunchConfiguration('play_duration').perform(context)
+    if duration:
+        cmd += ['--playback-duration', duration]
+    return [ExecuteProcess(cmd=cmd, output='screen')]
+
+
 def generate_launch_description():
     share = get_package_share_directory('limit_case_ros2')
     depth = '/camera/aligned_depth_to_color/image_raw'
     info = '/camera/aligned_depth_to_color/camera_info'
-
-    bag = ExecuteProcess(
-        cmd=['ros2', 'bag', 'play', LaunchConfiguration('bag'),
-             '--loop'],
-        output='screen', condition=IfCondition(PythonExpression(
-            ["'", LaunchConfiguration('loop'), "' == 'true'"])))
-    bag_once = ExecuteProcess(
-        cmd=['ros2', 'bag', 'play', LaunchConfiguration('bag')], output='screen',
-        condition=IfCondition(PythonExpression(
-            ["'", LaunchConfiguration('loop'), "' != 'true'"])))
 
     # The bag only carries the optical frame. Add the usual ROS body frame (x forward, z up)
     # so RViz shows the scene upright.
@@ -93,4 +95,7 @@ def generate_launch_description():
                               description='ground-truth error view instead of the filter'),
         DeclareLaunchArgument('gt_file', default_value='',
                               description='sidecar .npz (default: <bag>/gt_sidecar.npz)'),
-        bag, bag_once, tf, gt_cloud, filt, clouds, rviz])
+        DeclareLaunchArgument('play_duration', default_value='',
+                              description='play only the first N seconds of the bag, e.g. 7.9 '
+                                          'for its first two scenes (Jazzy and newer)'),
+        OpaqueFunction(function=play_bag), tf, gt_cloud, filt, clouds, rviz])

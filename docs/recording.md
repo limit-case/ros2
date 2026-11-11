@@ -27,6 +27,8 @@ RViz point clouds reliably on Apple Silicon.)
    ```
 
    Wait about 20 s for `Open http://localhost:6080/...` and the RViz start-up lines.
+   This plain command is only for checking the setup. For a recording, use the command of the clip you are making:
+   `gt:=true` for the headline clip, `play_duration:=7.9` for the filter clip (it keeps scene 15 out).
 2. Open <http://localhost:6080/vnc.html?autoconnect=true&resize=scale> in Chrome or Safari. You should see RViz
    with a **Displays** panel on the left and three clouds on the right. `resize=scale` fits the 1280x720 virtual
    screen to the window; make the browser window 16:9 (for example 1280x800 including browser chrome) so it
@@ -75,7 +77,16 @@ Do not show the filter in this clip.
 
 ## Optional second clip: the filter (follows `docs/video_script.md`)
 
-Start the container without `gt:=true`.
+Start the container without `gt:=true` and with `play_duration:=7.9`, so the loop holds only scenes 18 and 14
+(8 s per loop):
+
+```bash
+docker run --rm --name lcdemo -p 6080:6080 --shm-size=1g -v "$PWD/demo_bag:/bag:ro" limit-case-demo play_duration:=7.9
+```
+
+**Never show the filter on scene 15.** The filter flags none of its wrong glass pixels (`docs/demo_scenes.md`), so
+any red there is a false alarm and a caption about "caught glass" would be untrue. If a recording was made without
+`play_duration` (or on Humble, where that option does not exist), cut out seconds 8 to 12 of every 12 s loop.
 
 | Time | Do | Say or caption |
 |---|---|---|
