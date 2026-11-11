@@ -207,7 +207,7 @@ Seeded with: RealSense D415, D435, L515.
 ## Roadmap
 
 - v0.1 (this release): honest depth-only baseline.
-- Next, v0.2: an RGB mask proposes the glass region and depth verifies the too-far pixels inside it. First test numbers (D435 test / D415 test, each run once): wrong removed 47.4% / 20.4%, correct lost 7.2% / 5.4%, outside-mask flagged 0.4% / 0.4% with the v0.1 thresholds; the configuration selected on val under the 5% correct-lost budget did not transfer (8.2% / 10.3% wrong removed) (`results/eval_rgb_proposal_test_*_summary.csv`, `scripts/eval_rgb_proposal.py`).
+- Next, v0.2: an RGB mask proposes the glass region and depth verifies the too-far pixels inside it. Two settings were run once on D435 test / D415 test: the one selected on val (5 px ring, 3 cm; 29.3% wrong removed on val) overfit and removed 8.2% / 10.3% of wrong pixels, below v0.1's 14.6% / 11.4%; the untuned setting declared before the test run (v0.1 thresholds, 15 px ring) removed 47.4% / 20.4% with 7.2% / 5.4% correct lost and 0.4% / 0.4% outside-mask flagged. Preferring the untuned setting is now a test-informed choice, so v0.2 will fix the selection protocol and confirm on fresh data (`results/eval_rgb_proposal_*_summary.csv`, `scripts/eval_rgb_proposal.py`).
 - v0.3: learned RGB detector (covers glass surrounded only by missing pixels, which depth cannot).
 - Later: Gazebo glass simulation plugin, remote rosbag reports.
 
