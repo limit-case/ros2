@@ -26,10 +26,12 @@ v0.1 is an **honest depth-only baseline**. On ClearGrasp D435 test (1280x720) th
 **8.7%** of the pixels outside the glass, at **7.4 ms** per frame (core only, `downsample: 3`).
 Most wrong pixels survive. See "Why depth alone misses glass" below.
 
-| Set (1280x720, tolerance 5%, transparent-mask pixels) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged | Core latency mean / p95 (ms) |
-|---|---|---|---|---|---|
-| D435 test (23 scenes), run once | 23.9% -> 22.6% | 14.6% | 7.9% | 8.7% | 7.4 / 7.6 |
-| D435 val (173 scenes), the tuning set | 51.3% -> 48.6% | 14.6% | 4.7% | 6.0% | 7.3 / 8.6 |
+| Set (1280x720, tolerance 5%, transparent-mask pixels) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
+|---|---|---|---|---|
+| D435 test (23 scenes), run once | 23.9% -> 22.6% | 14.6% | 7.9% | 8.7% |
+| D435 val (173 scenes), the tuning set | 51.3% -> 48.6% | 14.6% | 4.7% | 6.0% |
+
+Core latency: 7.4 ms mean, 7.6 ms p95 per 1280x720 frame (D435 test, `downsample: 3`).
 
 Second camera, RealSense D415 test (90 scenes, run once, same `realsense_d435.yaml` profile, native 848x480):
 36.9% -> 35.2% wrong among returned, 11.4% wrong removed, 4.5% correct lost, 8.7% outside-mask flagged.
@@ -43,7 +45,7 @@ Where every number comes from (all produced by `filter_cli` through `scripts/eva
 | D415 test | `results/eval_cg_test_d415_summary.csv` | `scripts/eval_glassbench.py --split real-test/d415 --name cg_test_d415 --params config/realsense_d435.yaml` |
 
 Each command also writes the per-image rows (`results/eval_<name>.csv`). Columns used: `wrong_among_returned_raw`,
-`wrong_among_returned_after`, `wrong_removed`, `correct_lost`, `outside_flagged`, `latency_ms_mean`, `latency_ms_p95`.
+`wrong_among_returned_after`, `wrong_removed`, `correct_lost`, `outside_flagged`.
 
 Notes:
 - Tuned **only** on ClearGrasp D435 val (`scripts/tune_val.py`, every configuration in `results/tune_val.csv`). The
@@ -52,7 +54,7 @@ Notes:
 - "Wrong among returned" = wrong / (correct + wrong): the chance that a depth the sensor chose to report is wrong.
 - Definitions follow GlassBench `docs/measurement.md`: ground-truth-valid pixels only; missing = raw 0 and never
   counted as wrong; wrong = returned and more than 5% off ground truth.
-- Latency is the core filter only (`filter_cli`), on an arm64 Docker VM with 2 CPUs, Release build. It excludes image
+- Latency (`latency_ms_mean`, `latency_ms_p95` of the D435 test CSV) is the core filter only (`filter_cli`), on an arm64 Docker VM with 2 CPUs, Release build. It excludes image
   decoding, `cv_bridge` conversion and publishing, which the node's diagnostics report separately.
 
 ## Why depth alone misses glass
@@ -77,7 +79,6 @@ Notes:
   with `--name cg_val_d435_ablation_skip_defaults`, and with `--set treat_invalid_as_wall=true --name cg_val_d435_ablation_bfs`.
 - Even the best depth-only variant leaves most wrong pixels in place and flags 6.0% of returned pixels outside the
   glass mask on val, 8.7% on test.
-- Roadmap consequence: v0.2 lets an **RGB mask propose the region and depth verify the too-far pixels** inside it.
 
 ## Quick start
 
@@ -206,7 +207,7 @@ Seeded with: RealSense D415, D435, L515.
 ## Roadmap
 
 - v0.1 (this release): honest depth-only baseline.
-- v0.2: an RGB mask proposes the glass region, depth verifies the too-far pixels inside it.
+- Next, v0.2: an RGB mask proposes the glass region and depth verifies the too-far pixels inside it. First test numbers (D435 test / D415 test, each run once): wrong removed 47.4% / 20.4%, correct lost 7.2% / 5.4%, outside-mask flagged 0.4% / 0.4% with the v0.1 thresholds; the configuration selected on val under the 5% correct-lost budget did not transfer (8.2% / 10.3% wrong removed) (`results/eval_rgb_proposal_test_*_summary.csv`, `scripts/eval_rgb_proposal.py`).
 - v0.3: learned RGB detector (covers glass surrounded only by missing pixels, which depth cannot).
 - Later: Gazebo glass simulation plugin, remote rosbag reports.
 
@@ -225,7 +226,8 @@ If you use this, please cite GlassBench:
 ```
 
 - Code: Apache-2.0, see [LICENSE](LICENSE).
-- [ClearGrasp](https://github.com/Shreeyak/cleargrasp) data (all numbers above, the demo bag and its ground-truth
-  sidecar): Apache-2.0.
+- [ClearGrasp](https://github.com/Shreeyak/cleargrasp) data (all numbers above): Apache-2.0. The demo bag and its
+  ground-truth sidecar are derived from ClearGrasp (Sajjan et al., ICRA 2020) and ship with the attribution in
+  [NOTICE](NOTICE).
 - [TransCG](https://graspnet.net/transcg): CC BY-NC-SA 4.0, **non-commercial**. It may be evaluated locally, but its
   images and anything derived from them are never committed or shipped here.
