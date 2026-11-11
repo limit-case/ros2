@@ -15,7 +15,7 @@ RViz point clouds reliably on Apple Silicon.)
    ```
 
    Use `--build-arg ROS_DISTRO=humble` for Humble. The default is Jazzy.
-3. Get the demo bag as `./demo_bag/` (a directory with `demo_bag.mcap` and `metadata.yaml`, 66 MiB): download it from
+3. Get the demo bag as `./demo_bag/` (a directory with `demo_bag.mcap`, `metadata.yaml`, `gt_sidecar.npz` and `NOTICE`, 67 MiB): download it from
    the release, or rebuild it with the command at the bottom of `docs/demo_scenes.md`.
 
 ## Every time
@@ -52,7 +52,7 @@ docker run --rm --name lcdemo -p 6080:6080 --shm-size=1g -v "$PWD/demo_bag:/bag:
 ```
 
 Judge the scenes first without RViz: `out/gt_preview/<scene>.png` (orbit view, side view, side view with the true
-surface). Scene order in the loop: 14 (0 to 4 s), 18 (4 to 8 s), 19 (8 to 12 s). To hold one scene (14 or 18; 19 is weak),
+surface). Scene order in the loop: 18 (0 to 4 s), 14 (4 to 8 s), 15 (8 to 12 s); all three work. To hold one scene,
 toggle pause from a second terminal when it is on screen:
 
 ```bash
@@ -64,7 +64,7 @@ one to jump, or type the numbers into *Current View*.
 
 | Take | Time | Do | Caption |
 |---|---|---|---|
-| 1. Camera's eye | 0 to 5 s | Hold the opening view on scene 14 or 18. Do not move | This is what the depth camera reported. Red = wrong |
+| 1. Camera's eye | 0 to 5 s | Hold the opening view on scene 14 (largest red patch) or 18 (most objects). Do not move | This is what the depth camera reported. Red = wrong |
 | 2. Slow orbit | 5 to 15 s | Drag slowly left to right, about a quarter turn (Yaw 2.3 down to about 0.8), keep Pitch near 0.45 | The red points are not on the glass. They are behind it |
 | 3. Side view | 15 to 22 s | Double-click **Side (depth gap)** (Yaw -1.57, Pitch 0.02, camera on the left, depth to the right). Hold | White: where the glass is. Red: where the camera said it was |
 | 4. Truth on | 22 to 28 s | Still in the side view, tick **True surface from ground truth (green)** | Green = the real surface. The gap is the error |

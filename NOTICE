@@ -1,0 +1,24 @@
+limit_case_ros2
+Copyright 2026 Limit Case
+
+Third-party data
+----------------
+
+The demo bag (demo_bag.mcap, metadata.yaml) and its ground-truth sidecar (gt_sidecar.npz), distributed as
+release assets of this project, are derived from the ClearGrasp dataset:
+
+  ClearGrasp: 3D Shape Estimation of Transparent Objects for Manipulation
+  Shreeyak S. Sajjan, Matthew Moore, Mike Pan, Ganesh Nagaraja, Johnny Lee, Andy Zeng, Shuran Song
+  IEEE International Conference on Robotics and Automation (ICRA), 2020
+  https://sites.google.com/view/cleargrasp    https://github.com/Shreeyak/cleargrasp
+
+ClearGrasp is licensed under the Apache License, Version 2.0
+(http://www.apache.org/licenses/LICENSE-2.0).
+
+Changes made by Limit Case: three scenes of the real D435 test set (000000018, 000000014, 000000015) were
+resized from 1280x720 to 640x360 (nearest neighbour for depth, ground-truth depth and mask; area averaging for
+colour), raw depth was converted from float metres to 16-bit millimetres, each static capture was repeated 20
+times at 5 Hz, and the frames were written as ROS 2 messages (rosbag2, mcap). The sidecar holds the resized
+ground-truth depth, transparent-object mask and raw depth of the same three scenes.
+
+No TransCG data (CC BY-NC-SA 4.0) is included in this repository or its release assets.
