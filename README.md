@@ -229,5 +229,7 @@ If you use this, please cite GlassBench:
 - [ClearGrasp](https://github.com/Shreeyak/cleargrasp) data (all numbers above): Apache-2.0. The demo bag and its
   ground-truth sidecar are derived from ClearGrasp (Sajjan et al., ICRA 2020) and ship with the attribution in
   [NOTICE](NOTICE).
-- [TransCG](https://graspnet.net/transcg): CC BY-NC-SA 4.0, **non-commercial**. It may be evaluated locally, but its
-  images and anything derived from them are never committed or shipped here.
+- [TransCG](https://graspnet.net/transcg): CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike
+  4.0 International), **non-commercial**. Fang, H., Fang, H.-S., Xu, S., Lu, C. "TransCG: A Large-Scale Real-World Dataset for Transparent Object Depth Completion and a Grasping Baseline." IEEE RA-L 7(3):7383-7390, 2022. doi:10.1109/LRA.2022.3183256
+  It may be evaluated locally; its images, per-image data and anything rendered from them are never committed or
+  shipped here.
