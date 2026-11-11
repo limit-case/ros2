@@ -38,7 +38,44 @@ RViz point clouds reliably on Apple Silicon.)
    browser toolbar), click **Record**. Stop with the menu-bar stop button (or `Cmd+Ctrl+Esc`). The `.mov` lands on the
    Desktop. 20 to 30 s is one and a half to two and a half loops.
 
-## Suggested take (follows `docs/video_script.md`)
+## Headline clip: ground-truth error view (20 to 30 s)
+
+This is the clip for the README and the launch. It shows the failure itself, not the filter: the raw cloud coloured
+by ground truth. Red = glass pixels the camera got wrong (more than 5% off), white = glass pixels it got right, dim
+grey = everything that is not glass. Missing pixels are simply absent.
+
+Start the container with `gt:=true` appended (the bag folder must contain `gt_sidecar.npz`, see
+`docs/demo_scenes.md`):
+
+```bash
+docker run --rm --name lcdemo -p 6080:6080 --shm-size=1g -v "$PWD/demo_bag:/bag:ro" limit-case-demo gt:=true
+```
+
+Judge the scenes first without RViz: `out/gt_preview/<scene>.png` (orbit view, side view, side view with the true
+surface). Scene order in the loop: 14 (0 to 4 s), 18 (4 to 8 s), 19 (8 to 12 s). To hold one scene (14 or 18; 19 is weak),
+toggle pause from a second terminal when it is on screen:
+
+```bash
+docker exec lcdemo bash -c '. /opt/ros/$ROS_DISTRO/setup.bash && ros2 service call /rosbag2_player/toggle_paused rosbag2_interfaces/srv/TogglePaused'
+```
+
+RViz opens on the **Orbit start** view. The **Views** panel (bottom left) has the two saved views; double-click
+one to jump, or type the numbers into *Current View*.
+
+| Take | Time | Do | Caption |
+|---|---|---|---|
+| 1. Camera's eye | 0 to 5 s | Hold the opening view on scene 14 or 18. Do not move | This is what the depth camera reported. Red = wrong |
+| 2. Slow orbit | 5 to 15 s | Drag slowly left to right, about a quarter turn (Yaw 2.3 down to about 0.8), keep Pitch near 0.45 | The red points are not on the glass. They are behind it |
+| 3. Side view | 15 to 22 s | Double-click **Side (depth gap)** (Yaw -1.57, Pitch 0.02, camera on the left, depth to the right). Hold | White: where the glass is. Red: where the camera said it was |
+| 4. Truth on | 22 to 28 s | Still in the side view, tick **True surface from ground truth (green)** | Green = the real surface. The gap is the error |
+
+Tips: one slow drag beats several short ones; let go of the mouse for a second at the start and end of every take so
+the clip can be cut there. The median gap is about 4 cm, so stay zoomed in (Distance 0.6 to 0.8) for takes 3 and 4.
+Do not show the filter in this clip.
+
+## Optional second clip: the filter (follows `docs/video_script.md`)
+
+Start the container without `gt:=true`.
 
 | Time | Do | Say or caption |
 |---|---|---|
@@ -51,9 +88,12 @@ rather than the glass (see `docs/demo_scenes.md` and the README limitation); do 
 
 ## Make the README GIF
 
+Use the ground-truth clip (takes 2 to 4), not the filter clip. Save it as `docs/gt_error.gif`; the README has a
+placeholder for it.
+
 ```bash
-ffmpeg -i ~/Desktop/Screen\ Recording*.mov -ss 0 -t 10 -vf "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" demo.gif
-ls -lh demo.gif   # keep it under 5 MB; lower fps or scale if bigger
+ffmpeg -i ~/Desktop/Screen\ Recording*.mov -ss 5 -t 12 -vf "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" docs/gt_error.gif
+ls -lh docs/gt_error.gif   # keep it under 5 MB; lower fps or scale if bigger
 ```
 
 ## Troubleshooting

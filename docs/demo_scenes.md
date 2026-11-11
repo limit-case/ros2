@@ -57,7 +57,61 @@ is a red box, not a caught glass object, so it would mislead. That exclusion is 
   correct lost, but 12.8% outside flagged) were the next candidates.
 - 17 of the 23 scenes catch no wrong glass pixel at all (four of them, 10 to 13, have none to catch). Three scenes out of 23 is a favourable slice of the data, not a typical one.
 
-Regenerate the bag: see the docstring of `scripts/clearGrasp_to_bag.py`; the command used was
+## Ground-truth error view: which scene shows the failure best
+
+The `gt:=true` view (`scripts/gt_error_cloud.py`) colours the raw cloud by GlassBench bucket: red = wrong (in the
+glass mask, more than 5% off ground truth), white = correct, dim grey = not glass, missing = not shown. For this view
+the filter is irrelevant, so the scenes are ranked by how clearly the through-glass error shows, not by filter
+performance.
+
+Rule, written before rendering any picture: at the bag resolution (640x360),
+**score = number of wrong glass pixels x median depth gap (raw minus ground truth, metres) of those pixels**.
+Many red points sitting far behind the glass score high. All 23 D435 test scenes, no filter involved
+(`scripts/gt_error_cloud.py rank`, every scene in `results/gt_error_scene_ranking.csv`); top 12:
+
+| Rank | Scene | Wrong px (red) | Median gap behind true surface | 90th pct gap | Score | In demo bag |
+|---|---|---|---|---|---|---|
+| 1 | 000000018 | 2042 | 3.7 cm | 5.1 cm | 76.2 | **yes** |
+| 2 | 000000014 | 1608 | 4.4 cm | 8.0 cm | 70.6 | **yes** |
+| 3 | 000000015 | 1216 | 4.2 cm | 6.7 cm | 50.9 |  |
+| 4 | 000000021 | 1262 | 3.8 cm | 4.1 cm | 48.3 |  |
+| 5 | 000000020 | 1212 | 3.7 cm | 4.1 cm | 44.9 |  |
+| 6 | 000000022 | 862 | 3.9 cm | 6.9 cm | 33.6 |  |
+| 7 | 000000017 | 762 | 4.4 cm | 5.1 cm | 33.5 |  |
+| 8 | 000000001 | 600 | 4.2 cm | 5.4 cm | 25.1 |  |
+| 9 | 000000004 | 673 | 3.7 cm | 4.5 cm | 24.7 |  |
+| 10 | 000000006 | 526 | 3.4 cm | 4.0 cm | 18.1 |  |
+| 11 | 000000019 | 412 | 4.1 cm | 5.7 cm | 17.1 | **yes** |
+| 12 | 000000016 | 384 | 4.0 cm | 6.6 cm | 15.4 |  |
+
+Ranking of the three bag scenes: **18 (rank 1), 14 (rank 2), 19 (rank 11)**.
+
+- Scenes 18 and 14 are the two best of the whole test set, so the bag already holds the right headline scenes.
+  18 has the most red points (four objects); 14 has fewer objects but the largest single red patch and the larger
+  gap. On the static previews (`out/gt_preview/`) 14 reads most cleanly; lead the clip with 14 or 18.
+- Scene 19 is weak for this view: about a quarter of the red of 14, mostly thin slivers.
+  Scenes `000000015`, `000000021` and `000000020` each have roughly three times its red points and would be clearly
+  better third scenes. The bag was not rebuilt; to swap one in, rerun the commands below with a different `--scenes`.
+- The gap is small in absolute terms: the median wrong pixel reads about 4 cm behind the true surface
+  (3.7 to 4.4 cm in the bag scenes), because the objects stand on a table and the camera sees the table through them.
+  From the camera's viewpoint that is invisible; from the side the red points lie on the table plane while the
+  true surface (green, `/demo/gt_surface_points`) stands above it.
+- Mask pixels that returned a depth but have no ground truth (164 to 896 px per bag scene) cannot be judged and are
+  not drawn.
+
+Make the sidecar the view needs (ground truth and mask at bag resolution, 0.6 MB, ClearGrasp-derived, Apache-2.0)
+and the static previews:
+
+```bash
+scripts/gt_error_cloud.py prepare --data ~/glassbench/datasets/cleargrasp-dataset-test-val/real-test/d435 \
+    --scenes 000000014,000000018,000000019 --out demo_bag/gt_sidecar.npz
+scripts/gt_error_cloud.py preview --sidecar demo_bag/gt_sidecar.npz --out out/gt_preview
+ros2 launch limit_case_ros2 demo_bag.launch.py bag:=demo_bag gt:=true
+```
+
+## Regenerate the bag
+
+See the docstring of `scripts/clearGrasp_to_bag.py`; the command used was
 
 ```bash
 scripts/clearGrasp_to_bag.py --data ~/glassbench/datasets/cleargrasp-dataset-test-val/real-test/d435 \
