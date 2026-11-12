@@ -105,7 +105,7 @@ def scene_frame(obj, outside, surface):
 
 
 def shot(t, elev0, extent, aspect):
-    """Camera and layer state at scene time t: (azimuth deg, elevation deg, half-width m, green)."""
+    """Camera and layer state at scene time t: (azimuth deg, elevation deg, half-width, green)."""
     wide = max(0.20, float(max(extent[0], extent[1])) / 2.0 + 0.10)
     tight = max(0.13, float(extent[0]) / 2.0 + 0.07, (float(extent[2]) / 2.0 + 0.04) * aspect)
     if t < T_ORBIT:
