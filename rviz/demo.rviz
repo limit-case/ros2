@@ -27,13 +27,13 @@ Visualization Manager:
       Color Transformer: FlatColor
       Color: 255; 255; 255
     - Class: rviz_default_plugins/PointCloud2
-      Name: Suspected obstacles (red)
+      Name: Suspected obstacles (orange)
       Enabled: true
       Topic: {Value: /limit_case/suspected_obstacles, Depth: 2, Reliability Policy: Reliable}
       Style: Points
       Size (Pixels): 4
       Color Transformer: FlatColor
-      Color: 255; 0; 0
+      Color: 255; 140; 0
     - Class: rviz_default_plugins/Image
       Name: Mask
       Enabled: false

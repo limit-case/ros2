@@ -86,10 +86,10 @@ means the filter flagged them.
 - The filter demo (without `gt:=true`) on this bag is an honest mix: it catches 76.6% of the wrong glass pixels in
   scene 14, 25.0% in scene 18, and **none** in scene 15.
 - It also flags correct glass pixels (17.7% and 35.2% in scenes 14 and 18) and, more visibly, pixels **outside** the
-  glass: 10.5% to 12.7% of the returned pixels elsewhere in the frame. In the RViz view the biggest red patches are
+  glass: 10.5% to 12.7% of the returned pixels elsewhere in the frame. In the RViz view the biggest orange patches are
   on the black case under the glass and on the far wall band, not on the glass itself. Those flagged pixels become
-  phantom obstacles in the red cloud, exactly the limitation stated in the README. A filter clip should not be
-  captioned as if every red point were glass.
+  phantom obstacles in the orange `suspected_obstacles` cloud, exactly the limitation stated in the README. A filter clip should not be
+  captioned as if every orange point were glass.
 - 17 of the 23 scenes catch no wrong glass pixel at all (four of them, 10 to 13, have none to catch).
 - Scene `000000022` catches 100% only because it flags the entire inside of a cardboard box (100% of its correct
   glass pixels, 29.8% of the returned pixels outside the glass).

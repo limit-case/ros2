@@ -1,7 +1,7 @@
 """No hardware: play the demo bag, run the filter, show raw / filtered / suspected clouds in RViz.
 
   ros2 launch limit_case_ros2 demo_bag.launch.py bag:=/path/to/demo_bag
-Cloud colours (rviz/demo.rviz): raw = grey, filtered = white, suspected obstacles = red.
+Cloud colours (rviz/demo.rviz): raw = grey, filtered = white, suspected obstacles = orange.
 Arguments: bag (required), rviz:=false for headless runs, loop:=false to play the bag once,
 play_duration:=7.9 to play only the first two scenes (4 s each; needs Jazzy or newer).
 
