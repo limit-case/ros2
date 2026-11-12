@@ -173,8 +173,8 @@ def annotate(view, scene, colours, caption, scale):
     d.text((int(28 * scale), int(54 * scale)), SOURCE, font=small, fill=grey)
     # legend, top right: one colour square and one line of text per layer
     sq, row = int(20 * scale), int(34 * scale)
-    x0 = w - int(28 * scale) - sq - int(12 * scale) - int(max(d.textlength(t, font=small)
-                                                               for t in LEGEND))
+    text_w = int(max(d.textlength(t, font=small) for t in LEGEND))
+    x0 = w - int(28 * scale) - sq - int(12 * scale) - text_w
     pad = int(12 * scale)
     d.rectangle([x0 - pad, int(24 * scale) - pad, w, int(24 * scale) + len(LEGEND) * row],
                 fill=(0, 0, 0))
