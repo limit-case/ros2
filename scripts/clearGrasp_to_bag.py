@@ -2,7 +2,7 @@
 r"""Convert ClearGrasp real scenes (RGB, raw depth, intrinsics JSON) to a rosbag2 .mcap at 5 Hz.
 
 Pure Python via `rosbags` (pip install rosbags numpy opencv-python); no ROS install needed.
-Publishes the RealSense topic names from readthis.md section 4:
+Publishes the RealSense topic names:
   /camera/aligned_depth_to_color/image_raw (16UC1 mm)  /camera/aligned_depth_to_color/camera_info
   /camera/color/image_raw (rgb8)
 Download ClearGrasp yourself (e.g. glassbench/datasets/cleargrasp-dataset-test-val). Defaults match

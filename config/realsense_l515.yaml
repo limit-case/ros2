@@ -7,8 +7,8 @@
     min_basin_depth_rel: 0.03
     min_region_area_px: 150
     max_range_m: 6.0
-    treat_invalid_as_wall: false   # rev. 2: false = holes impassable; true = BFS wall option
-    boundary_verify: false         # variant (c), see docs/DECISIONS.md
+    treat_invalid_as_wall: false   # false = holes impassable; true = BFS wall option
+    boundary_verify: false         # true: flag a region only if valid nearer pixels border it
     min_nearer_boundary_frac: 0.1
     flag_hole_only: false
     use_rgb: false

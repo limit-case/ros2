@@ -164,8 +164,8 @@ All outputs reuse the input depth header.
 | `min_region_area_px` | 150 | at full resolution |
 | `max_range_m` | 4.0 | ignore pixels beyond this |
 | `treat_invalid_as_wall` | false | false: holes are impassable, a patch reachable only through holes is ignored. true: BFS wall option (holes take the elevation of the valid cells they border) |
-| `boundary_verify` | false | variant (c): flag a region only if part of its boundary is valid pixels nearer than it; cloud depth = median of those pixels |
-| `min_nearer_boundary_frac` / `flag_hole_only` | 0.1 / false | variant (c) tuning: required share of nearer valid boundary; flag hole-only regions in the mask without a cloud |
+| `boundary_verify` | false | flag a region only if part of its boundary is valid pixels nearer than it; cloud depth = median of those pixels |
+| `min_nearer_boundary_frac` / `flag_hole_only` | 0.1 / false | `boundary_verify` tuning: required share of nearer valid boundary; flag hole-only regions in the mask without a cloud |
 | `use_rgb` | false | enable the specular highlight vote (startup only) |
 | `specular_v_thresh` / `specular_s_thresh` | 240 / 40 | HSV highlight thresholds |
 | `confidence_threshold` | 0.5 | lower = more aggressive |

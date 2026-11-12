@@ -309,7 +309,7 @@ void filterGlass(
       }
       continue;
     }
-    // Variant (c): the boundary must contain valid pixels nearer than the region.
+    // boundary_verify: the boundary must contain valid pixels nearer than the region.
     std::vector<float> depths;
     for (int c : members) {
       depths.push_back(ld[c]);

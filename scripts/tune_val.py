@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 r"""Val-only parameter search over filter_cli variants, with the fixed selection rule.
 
-Rule (docs/DECISIONS.md D6): maximize `wrong removed` subject to `correct lost` <= 5% on
+Rule (fixed before any test-set run): maximize `wrong removed` subject to `correct lost` <= 5% on
 ClearGrasp D435 val (rel5%, mask region, pooled).
 
 This script can only read real-val/d435: the test sets are never touched here. It stages the val

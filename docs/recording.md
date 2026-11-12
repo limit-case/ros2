@@ -75,7 +75,7 @@ Tips: one slow drag beats several short ones; let go of the mouse for a second a
 the clip can be cut there. The median gap is about 4 cm, so stay zoomed in (Distance 0.6 to 0.8) for takes 3 and 4.
 Do not show the filter in this clip.
 
-## Optional second clip: the filter (follows `docs/video_script.md`)
+## Optional second clip: the filter
 
 Start the container without `gt:=true` and with `play_duration:=7.9`, so the loop holds only scenes 18 and 14
 (8 s per loop):

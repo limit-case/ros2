@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #pragma once
-// ROS-free core of the glass filter (spec: ../readthis.md section 5). No rclcpp/cv_bridge here.
+// ROS-free core of the glass filter. No rclcpp/cv_bridge here.
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -28,15 +28,15 @@ struct GlassParams
   float min_basin_depth_rel = 0.03f;
   int min_region_area_px = 150;  // at full resolution
   float max_range_m = 4.0f;
-  // Default false (rev. 2): holes are impassable and a patch reachable only through holes
+  // Default false: holes are impassable and a patch reachable only through holes
   // is ignored. true = BFS wall rule (holes take the elevation of the valid cells they border).
   bool treat_invalid_as_wall = false;
-  // Variant (c): holes are impassable finite walls for enclosure. A region is flagged only if
+  // boundary_verify: holes are impassable finite walls for enclosure. A region is flagged only if
   // at least `min_nearer_boundary_frac` of its boundary is valid pixels nearer than the region;
   // the cloud depth is the median of those pixels. Overrides treat_invalid_as_wall.
   bool boundary_verify = false;
   float min_nearer_boundary_frac = 0.1f;
-  // Variant (c) only: also flag regions with no nearer valid boundary (holes alone);
+  // boundary_verify only: also flag regions with no nearer valid boundary (holes alone);
   // mask only, no cloud.
   bool flag_hole_only = false;
   bool use_rgb = false;

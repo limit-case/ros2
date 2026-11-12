@@ -1,5 +1,5 @@
 # Profile: RealSense D435. Tuned ONLY on ClearGrasp D435 val (scripts/tune_val.py; every configuration is in
-# results/tune_val.csv, the winner in results/selected.json). Selection rule (docs/DECISIONS.md D6):
+# results/tune_val.csv, the winner in results/selected.json). Selection rule, fixed before any test run:
 # maximize wrong removed subject to correct lost <= 5%. Measured at 1280x720 with downsample 3.
 /**:
   ros__parameters:
@@ -10,7 +10,7 @@
     min_region_area_px: 150
     max_range_m: 4.0
     treat_invalid_as_wall: false
-    boundary_verify: true          # variant (c), strict (holes alone never flag)
+    boundary_verify: true          # strict: holes alone never flag
     min_nearer_boundary_frac: 0.1
     flag_hole_only: false
     use_rgb: false
