@@ -6,9 +6,11 @@ A depth camera missed a clear surface, returned the wall behind it, and the arm 
 
 **Depth alone can't see glass. We measured why.**
 
-<!-- TODO(owner): ground-truth error GIF (raw cloud, red = wrong, seen from the side). Record it with
-     docs/recording.md, save as docs/gt_error.gif, then uncomment:
-     ![Raw depth cloud coloured by ground truth: the red points sit behind the glass](docs/gt_error.gif) -->
+![Raw depth cloud coloured by ground truth, seen from the side: the red points lie behind the glass, the green true surface stands in front of them](docs/media/gt_error.gif)
+
+<sub>Raw D435 depth of one [ClearGrasp](https://github.com/Shreeyak/cleargrasp) test scene (Sajjan et al., ICRA 2020,
+Apache-2.0), coloured by its ground truth: red = wrong, white = correct, grey = not glass, green = true surface.
+Rendered by [`tools/render_gt_clip.sh`](tools/render_gt_clip.sh).</sub>
 
 `limit_case_ros2` is a ROS 2 node that sits between a depth camera driver and your navigation or manipulation
 stack. It looks for **silent depth failures on transparent objects**: pixels where the camera returns a confident
@@ -82,34 +84,45 @@ Notes:
 
 ## Quick start
 
-Install (ROS 2 Jazzy or Humble):
+Build (ROS 2 Jazzy or Humble already installed and sourced, with `colcon` and `rosdep`):
 
 ```bash
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 git clone https://github.com/limit-case/ros2.git limit_case_ros2
-cd .. && rosdep install --from-paths src -y --ignore-src
+cd ~/ros2_ws
+sudo apt-get update && rosdep update
+rosdep install --from-paths src -y --ignore-src
 colcon build --packages-select limit_case_ros2
 source install/setup.bash
 ```
 
-Run the demo bag (no hardware; download `demo_bag` from the latest GitHub release):
+Get the demo bag (no hardware needed; 29 MB download from the v0.1.0 release, SHA256-checked, unpacked to
+`./demo_bag`):
 
 ```bash
-ros2 launch limit_case_ros2 demo_bag.launch.py bag:=<path-to-demo_bag>
+src/limit_case_ros2/scripts/fetch_demo_bag.sh
 ```
 
-RViz shows the raw cloud in grey, the filtered cloud in white and the suspected glass surface in red.
-
-See the failure itself, the ground-truth error view:
+See the failure itself, the ground-truth error view (the picture at the top):
 
 ```bash
-ros2 launch limit_case_ros2 demo_bag.launch.py bag:=<path-to-demo_bag> gt:=true
+ros2 launch limit_case_ros2 demo_bag.launch.py bag:=demo_bag gt:=true
 ```
 
 This colours the **raw** cloud with ClearGrasp ground truth: red = glass pixels that are wrong (more than 5% off),
 white = glass pixels that are correct, dim grey = not glass, missing pixels not drawn. Orbit to the side: the red
 points sit behind the glass. It needs `gt_sidecar.npz` in the bag folder (shipped with the release bag, or made with
 `scripts/gt_error_cloud.py prepare`; see [`docs/demo_scenes.md`](docs/demo_scenes.md)).
+
+Run the filter on the same bag:
+
+```bash
+ros2 launch limit_case_ros2 demo_bag.launch.py bag:=demo_bag
+```
+
+RViz shows the raw cloud in grey, the filtered cloud in white and the suspected glass surface in red. Not every red
+point is glass, see [Limitations](#limitations). Add `rviz:=false` on a machine without a display; the topics
+below are still published.
 
 On a live camera:
 
