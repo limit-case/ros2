@@ -15,6 +15,7 @@ green = true glass surface, grey = not glass. Rendered by [`tools/render_gt_clip
 `limit_case_ros2` is a ROS 2 node that sits between a depth camera driver and Nav2 or MoveIt and flags **silent
 depth failures on transparent objects**, pixels where the camera confidently reports the surface *behind* the glass;
 v0.1 is an honest depth-only baseline that removes **14.6%** of them on ClearGrasp D435 test, at **7.4 ms** per frame.
+Research-grade, not safety certified.
 
 | ClearGrasp set (5% tolerance) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
 |---|---|---|---|---|
