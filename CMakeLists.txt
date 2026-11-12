@@ -65,6 +65,7 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(test_gt_error_cloud test/test_gt_error_cloud.py)
+  ament_add_pytest_test(test_eval_transcg test/test_eval_transcg.py)
 endif()
 
 ament_export_include_directories(include)
