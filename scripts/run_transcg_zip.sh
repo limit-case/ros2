@@ -11,7 +11,7 @@
 # place and NOT deleted. TransCG is CC BY-NC-SA 4.0: nothing from it goes into a commit.
 # Needs: GLASSBENCH (default ~/glassbench) with its .venv and datasets/transcg/metadata.json
 # (from transcg-info.zip), Docker, and FILTER_CLI_IMAGE (default lc-cli:head) holding filter_cli
-# built from the frozen commit.
+# built from the frozen commit:   docker build -f docker/Dockerfile -t lc-cli:head .
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DRY=0
