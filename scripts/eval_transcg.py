@@ -70,7 +70,7 @@ def scene_views(views, scene, per_scene, seed):
 
 
 def metrics_from(t):
-    """The three protocol metrics in % from totals in FIELDS order (last axis)."""
+    """Return the three protocol metrics in % from totals in FIELDS order (last axis)."""
     with np.errstate(divide='ignore', invalid='ignore'):
         return (100.0 * t[..., 1] / t[..., 0], 100.0 * t[..., 3] / t[..., 2],
                 100.0 * t[..., 5] / t[..., 4])
@@ -245,7 +245,7 @@ def finalize(a, name, state, split_total, done):
     r, r2 = b['rgb/v01', 'wrong_removed_ratio'], secondary[-1]
     print(f"ratio wrong removed rgb / v01: {r['point']:.2f} "
           f"[{r['ci95_lo']:.2f}, {r['ci95_hi']:.2f}] (bootstrap over scenes)")
-    print(f"  secondary, optimistic (bootstrap over views): "
+    print('  secondary, optimistic (bootstrap over views): '
           f"[{r2['ci95_lo']:.2f}, {r2['ci95_hi']:.2f}]")
     s = summaries[0]
     print(f"missing in mask {s['missing_pct']:.1f}%, proposal IoU {s['proposal_iou']:.1f}%, "
