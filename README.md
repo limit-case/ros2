@@ -9,78 +9,21 @@ A depth camera missed a clear surface, returned the wall behind it, and the arm 
 ![Raw depth cloud coloured by ground truth, seen from the side: the red points lie behind the glass, the green true surface stands in front of them](docs/media/gt_error.gif)
 
 <sub>Raw D435 depth of one [ClearGrasp](https://github.com/Shreeyak/cleargrasp) test scene (Sajjan et al., ICRA 2020,
-Apache-2.0), coloured by its ground truth: red = wrong, white = correct, grey = not glass, green = true surface.
-Rendered by [`tools/render_gt_clip.sh`](tools/render_gt_clip.sh).</sub>
+Apache-2.0), coloured by its ground truth: red = wrong (it reads the table behind the glass), white = correct,
+green = true glass surface, grey = not glass. Rendered by [`tools/render_gt_clip.sh`](tools/render_gt_clip.sh).</sub>
 
-`limit_case_ros2` is a ROS 2 node that sits between a depth camera driver and your navigation or manipulation
-stack. It looks for **silent depth failures on transparent objects**: pixels where the camera returns a confident
-value that is wrong because it measured the surface *behind* the glass.
-[GlassBench](https://github.com/limit-case/glassbench) found that 99.8%+ of wrong pixels on transparent objects read
-**too far**; v0.1 uses that one fact, with depth only, and reports honestly how far it gets.
+`limit_case_ros2` is a ROS 2 node that sits between a depth camera driver and Nav2 or MoveIt and flags **silent
+depth failures on transparent objects**, pixels where the camera confidently reports the surface *behind* the glass;
+v0.1 is an honest depth-only baseline that removes **14.6%** of them on ClearGrasp D435 test, at **7.4 ms** per frame.
 
-> **Not a safety certification.** This is research-grade software. Do not rely on it as the only
-> protection against collisions. It has no safety certification of any kind.
-
-## Results
-
-v0.1 is an **honest depth-only baseline**. On ClearGrasp D435 test (1280x720) the filter removes
-**14.6%** of the confidently wrong glass pixels, loses **7.9%** of the correct ones, and flags
-**8.7%** of the pixels outside the glass, at **7.4 ms** per frame (core only, `downsample: 3`).
-Most wrong pixels survive. See "Why depth alone misses glass" below.
-
-| Set (1280x720, tolerance 5%, transparent-mask pixels) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
+| ClearGrasp set (5% tolerance) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
 |---|---|---|---|---|
 | D435 test (23 scenes), run once | 23.9% -> 22.6% | 14.6% | 7.9% | 8.7% |
 | D435 val (173 scenes), the tuning set | 51.3% -> 48.6% | 14.6% | 4.7% | 6.0% |
+| D415 test (90 scenes), run once | 36.9% -> 35.2% | 11.4% | 4.5% | 8.7% |
 
-Core latency: 7.4 ms mean, 7.6 ms p95 per 1280x720 frame (D435 test, `downsample: 3`).
-
-Second camera, RealSense D415 test (90 scenes, run once, same `realsense_d435.yaml` profile, native 848x480):
-36.9% -> 35.2% wrong among returned, 11.4% wrong removed, 4.5% correct lost, 8.7% outside-mask flagged.
-
-Where every number comes from (all produced by `filter_cli` through `scripts/eval_glassbench.py`):
-
-| Row | CSV | Command |
-|---|---|---|
-| D435 test | `results/eval_cg_test_d435_summary.csv` | `scripts/eval_glassbench.py --split real-test/d435 --name cg_test_d435 --params config/realsense_d435.yaml` |
-| D435 val | `results/eval_cg_val_d435_summary.csv` | `scripts/eval_glassbench.py --split real-val/d435 --name cg_val_d435 --params config/realsense_d435.yaml` |
-| D415 test | `results/eval_cg_test_d415_summary.csv` | `scripts/eval_glassbench.py --split real-test/d415 --name cg_test_d415 --params config/realsense_d435.yaml` |
-
-Each command also writes the per-image rows (`results/eval_<name>.csv`). Columns used: `wrong_among_returned_raw`,
-`wrong_among_returned_after`, `wrong_removed`, `correct_lost`, `outside_flagged`.
-
-Notes:
-- Tuned **only** on ClearGrasp D435 val (`scripts/tune_val.py`, every configuration in `results/tune_val.csv`). The
-  two test sets were each run once. The tuning budget was "correct pixels lost <= 5% on val"; D435 test exceeds it
-  (7.9%), so the val budget does not transfer exactly.
-- "Wrong among returned" = wrong / (correct + wrong): the chance that a depth the sensor chose to report is wrong.
-- Definitions follow GlassBench `docs/measurement.md`: ground-truth-valid pixels only; missing = raw 0 and never
-  counted as wrong; wrong = returned and more than 5% off ground truth.
-- Latency (`latency_ms_mean`, `latency_ms_p95` of the D435 test CSV) is the core filter only (`filter_cli`), on an arm64 Docker VM with 2 CPUs, Release build. It excludes image
-  decoding, `cv_bridge` conversion and publishing, which the node's diagnostics report separately.
-
-## Why depth alone misses glass
-
-- Almost every wrong pixel on glass reads **too far** (99.8% to 100.0% across the three sets, column
-  `wrong_too_far_pct`): the camera measured the surface behind.
-- But glass is rarely *wrong* alone. A large share of transparent-object pixels come back **missing**:
-  32.2% (D435 test), 39.7% (D435 val) and 62.5% (D415 test) of the pixels inside the transparent-object mask
-  have no depth at all (column `missing_pct`).
-- The basin idea needs a ring of *returned*, nearer pixels around the glass. Where that ring is made of holes, there
-  is no evidence in the depth image that the glass is there. Letting holes take the depth of their neighbours lets
-  the glass drain through the holes beside it; making holes impassable and requiring a nearer valid boundary helps
-  only partly:
-
-| Invalid-pixel rule (D435 val, 173 scenes, 1280x720) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | CSV |
-|---|---|---|---|---|
-| BFS wall: holes take the elevation of the valid pixels beside them (default thresholds) | 51.3% -> 50.3% | 5.2% | 1.1% | `results/eval_cg_val_d435_ablation_bfs_summary.csv` |
-| Holes impassable, default thresholds | 51.3% -> 48.9% | 13.5% | 4.7% | `results/eval_cg_val_d435_ablation_skip_defaults_summary.csv` |
-| Holes impassable + nearer-boundary check, tuned on val (`realsense_d435.yaml`, shipped) | 51.3% -> 48.6% | 14.6% | 4.7% | `results/eval_cg_val_d435_summary.csv` |
-
-  The two ablation rows: `scripts/eval_glassbench.py --split real-val/d435 --params config/default.yaml --set downsample=3`
-  with `--name cg_val_d435_ablation_skip_defaults`, and with `--set treat_invalid_as_wall=true --name cg_val_d435_ablation_bfs`.
-- Even the best depth-only variant leaves most wrong pixels in place and flags 6.0% of returned pixels outside the
-  glass mask on val, 8.7% on test.
+Most wrong pixels survive. Sources, definitions, latency details and the reason depth alone falls short:
+[`docs/results.md`](docs/results.md).
 
 ## Quick start
 
@@ -120,8 +63,8 @@ Run the filter on the same bag:
 ros2 launch limit_case_ros2 demo_bag.launch.py bag:=demo_bag
 ```
 
-RViz shows the raw cloud in grey, the filtered cloud in white and the suspected glass surface in red. Not every red
-point is glass, see [Limitations](#limitations). Add `rviz:=false` on a machine without a display; the topics
+RViz shows the raw cloud in grey, the filtered cloud in white and the suspected glass surface in orange. Not every
+orange point is glass, see [Limitations](#limitations). Add `rviz:=false` on a machine without a display; the topics
 below are still published.
 
 On a live camera:
@@ -134,6 +77,9 @@ ros2 launch limit_case_ros2 limit_case_filter.launch.py sensor_profile:=realsens
 
 No ROS install on a Mac, or no display? `docker/Dockerfile.demo` runs RViz in a container you view in the browser
 (noVNC); see [`docs/recording.md`](docs/recording.md). Develop on any OS with `docker/Dockerfile` or the devcontainer.
+
+> **Not a safety certification.** This is research-grade software. Do not rely on it as the only
+> protection against collisions. It has no safety certification of any kind.
 
 ## How it works
 
@@ -151,6 +97,13 @@ reads **farther** than that boundary, so in a depth image it looks like a **basi
 
 Dropping pixels is not enough: Nav2 and MoveIt discard invalid pixels, so glass would become *unknown* space,
 not an obstacle. The `suspected_obstacles` cloud is what makes the robot avoid it.
+
+Why this gets only part of the way (numbers and the ablation in [`docs/results.md`](docs/results.md)):
+
+- Almost every wrong pixel on glass reads **too far** (99.8% to 100.0% across the three sets). That is the one fact
+  v0.1 uses.
+- But 32.2% to 62.5% of the pixels on transparent objects come back **missing**, so the glass is mostly bordered by
+  holes, not by a ring of valid nearer pixels, and no basin forms in the depth image.
 
 ## Topics
 
@@ -201,8 +154,8 @@ as far-away free space, so a clearing source would raytrace through the glass an
 - **False alarms become phantom obstacles.** On both test sets 8.7% of the returned pixels *outside* the glass mask
   are flagged (column `outside_flagged`; 6.0% on D435 val). The filter cannot tell a depth basin on glass from other
   occluded or concave areas, and the `suspected_obstacles` cloud is built from every flagged region, so these are
-  published as obstacles, not just dropped from the depth image. In the demo bag many of the red points sit on a dark
-  case and a far wall, not on the glass (see `docs/demo_scenes.md`). Use this node where a spurious obstacle is
+  published as obstacles, not just dropped from the depth image. In the demo bag many of the orange points sit on a
+  dark case and a far wall, not on the glass (see `docs/demo_scenes.md`). Use this node where a spurious obstacle is
   cheaper than a collision with glass.
 - **Tuned on D435 val only.** One camera, one dataset, small objects on a table. The val budget (correct lost
   <= 5%) did not hold on D435 test (7.9%). D415 and L515 profiles are untuned; nothing here was measured on doors,
@@ -220,8 +173,14 @@ Seeded with: RealSense D415, D435, L515.
 ## Roadmap
 
 - v0.1 (this release): honest depth-only baseline.
-- Next, v0.2: an RGB mask proposes the glass region and depth verifies the too-far pixels inside it. Two settings were run once on D435 test / D415 test: the one selected on val (5 px ring, 3 cm; 29.3% wrong removed on val) overfit and removed 8.2% / 10.3% of wrong pixels, below v0.1's 14.6% / 11.4%; the untuned setting declared before the test run (v0.1 thresholds, 15 px ring) removed 47.4% / 20.4% with 7.2% / 5.4% correct lost and 0.4% / 0.4% outside-mask flagged. Preferring the untuned setting is now a test-informed choice, so v0.2 will fix the selection protocol and confirm on fresh data (`results/eval_rgb_proposal_*_summary.csv`, `scripts/eval_rgb_proposal.py`).
-- v0.3: learned RGB detector (covers glass surrounded only by missing pixels, which depth cannot).
+- Next, v0.2: an RGB mask proposes the glass region and depth verifies the too-far pixels inside it. Two settings
+  were each run once on D435 test / D415 test (`results/eval_rgb_proposal_*_summary.csv`):
+  - The setting selected on val (5 px ring, 3 cm; 29.3% wrong removed on val) **overfit**: 8.2% / 10.3% wrong
+    removed, below v0.1's 14.6% / 11.4%.
+  - The untuned setting declared before the test run (v0.1 thresholds, 15 px ring): 47.4% / 20.4% wrong removed,
+    7.2% / 5.4% correct lost, 0.4% / 0.4% outside-mask flagged.
+  - Preferring the untuned setting is now a test-informed choice, so v0.2 fixes the selection protocol and confirms
+    once on fresh data ([`docs/v0.2_protocol.md`](docs/v0.2_protocol.md)).
 - Later: Gazebo glass simulation plugin, remote rosbag reports.
 
 ## Citation and licences
