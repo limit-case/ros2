@@ -1,4 +1,35 @@
-# Recording the demo clip on a Mac (RViz in Docker, viewed in the browser)
+# The demo clips
+
+## Headline clip and README GIF: one command, no RViz
+
+```bash
+scripts/fetch_demo_bag.sh      # once; or rebuild the bag, see docs/demo_scenes.md
+tools/render_gt_clip.sh
+```
+
+This builds a small Docker image (`tools/render/Dockerfile`: PyVista on a virtual display, software OpenGL) and runs
+`scripts/render_gt_clip.py` in it. It needs only `demo_bag/gt_sidecar.npz` and takes about 3 minutes on 2 CPUs.
+The camera path is fixed, so every run gives the same clip. Outputs:
+
+| File | What |
+|---|---|
+| `out/clip/gt_clip_1080p.mp4` | 26 s, 1920x1080, H.264: scene 18 then scene 14, 13 s each |
+| `out/clip/frames/*.png` | four stills per scene (orbit start, orbit, side view, side view with the true surface) |
+| `docs/media/gt_error.gif` | README GIF: 800 px wide, 12 fps, the last 9.5 s of scene 14 (committed; ClearGrasp, Apache-2.0) |
+
+Per scene: 0 to 5 s slow orbit starting from the depth camera's own viewpoint; 5 to 7 s move to the side view (the
+table edge-on, camera on the left, depth to the right); 7 to 9.5 s hold; 9.5 to 13 s the true surface from ground
+truth fades in (green). Colours are those of `scripts/gt_error_cloud.py`: red = wrong, white = correct, dim grey = not
+glass, missing not drawn.
+
+Options go straight to the script, for example `tools/render_gt_clip.sh --scenes 18,14,15`,
+`--caption "..."`, `--gif-start 3.5 --gif-duration 9.5` (cut scene 18 instead), or
+`--gif-only` to cut a new GIF from the existing mp4. A quick look at half size:
+`tools/render_gt_clip.sh --width 960 --height 540 --fps 10 --out out/clip_test --gif out/clip_test/test.gif`.
+
+The rest of this page is the manual way (RViz, screen recording). Keep it as a fallback and for the filter clip.
+
+# Recording by hand on a Mac (RViz in Docker, viewed in the browser)
 
 RViz runs in a container with a virtual display; you look at it through noVNC in your browser and screen-record
 the browser. No XQuartz and no GPU passthrough needed. (XQuartz was not used: its indirect GLX does not render
@@ -15,8 +46,8 @@ RViz point clouds reliably on Apple Silicon.)
    ```
 
    Use `--build-arg ROS_DISTRO=humble` for Humble. The default is Jazzy.
-3. Get the demo bag as `./demo_bag/` (a directory with `demo_bag.mcap`, `metadata.yaml`, `gt_sidecar.npz` and `NOTICE`, 67 MiB): download it from
-   the release, or rebuild it with the command at the bottom of `docs/demo_scenes.md`.
+3. Get the demo bag as `./demo_bag/` (a directory with `demo_bag.mcap`, `metadata.yaml`, `gt_sidecar.npz` and `NOTICE`, 67 MiB): get it with
+   `scripts/fetch_demo_bag.sh`, or rebuild it with the command at the bottom of `docs/demo_scenes.md`.
 
 ## Every time
 
@@ -40,9 +71,9 @@ RViz point clouds reliably on Apple Silicon.)
    browser toolbar), click **Record**. Stop with the menu-bar stop button (or `Cmd+Ctrl+Esc`). The `.mov` lands on the
    Desktop. 20 to 30 s is one and a half to two and a half loops.
 
-## Headline clip: ground-truth error view (20 to 30 s)
+## Fallback take list for the headline clip: ground-truth error view (20 to 30 s)
 
-This is the clip for the README and the launch. It shows the failure itself, not the filter: the raw cloud coloured
+The automated render above replaces this; use it only if you want a hand-held take. It shows the failure itself, not the filter: the raw cloud coloured
 by ground truth. Red = glass pixels the camera got wrong (more than 5% off), white = glass pixels it got right, dim
 grey = everything that is not glass. Missing pixels are simply absent.
 
@@ -97,14 +128,14 @@ any red there is a false alarm and a caption about "caught glass" would be untru
 Be honest in the caption about what the red is. In these scenes a lot of it sits on the black case and the far wall
 rather than the glass (see `docs/demo_scenes.md` and the README limitation); do not claim every red point is glass.
 
-## Make the README GIF
+## Make a GIF from a hand-recorded clip
 
-Use the ground-truth clip (takes 2 to 4), not the filter clip. Save it as `docs/gt_error.gif`; the README has a
-placeholder for it.
+`tools/render_gt_clip.sh` already writes the README GIF (`docs/media/gt_error.gif`). To cut one from your own
+recording instead, use the ground-truth clip (takes 2 to 4), not the filter clip:
 
 ```bash
-ffmpeg -i ~/Desktop/Screen\ Recording*.mov -ss 5 -t 12 -vf "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" docs/gt_error.gif
-ls -lh docs/gt_error.gif   # keep it under 5 MB; lower fps or scale if bigger
+ffmpeg -i recording.mov -ss 5 -t 12 -vf "fps=12,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse" docs/media/gt_error.gif
+ls -lh docs/media/gt_error.gif   # keep it under 8 MB; lower fps or scale if bigger
 ```
 
 ## Troubleshooting

@@ -14,3 +14,4 @@ docs/video_script.md
 docs/DECISIONS.md
 .claude/
 out/
+__pycache__/
