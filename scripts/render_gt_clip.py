@@ -3,16 +3,19 @@ r"""Render the ground-truth error clip offscreen: no RViz, no screen recording, 
 
 Reads the demo bag's sidecar (gt_sidecar.npz, ClearGrasp, Apache-2.0) and draws the RAW cloud with
 the colours of gt_error_cloud.py: wrong = red, correct = white, outside the mask = dim grey,
-missing = not shown. The true surface from ground truth (green) appears in the last shot.
+missing = not shown, plus the true surface from ground truth in green.
 
-Per scene (default 18 then 14, 13 s each, 26 s in total):
+Clip, per scene (default 18 then 14, 13 s each, 26 s in total):
   0.0 to  5.0 s  slow orbit, starting from the depth camera's own viewpoint
   5.0 to  7.0 s  move to the side view (table edge-on, camera on the left, depth to the right)
-  7.0 to  9.5 s  hold the side view: the red points lie behind the glass
-  9.5 to 13.0 s  the true surface fades in (green)
+  7.0 to  7.5 s  hold the side view: the red points lie behind the glass
+  7.5 to 13.0 s  the true surface fades in (green) and stays
 
-Outputs: <out>/gt_clip_1080p.mp4 (H.264), the README GIF (a cut of the mp4) and a few PNG frames
-in <out>/frames/ for a quick look.
+README GIF (its own 8 s loop of one scene, default the last one, green shown in every frame):
+  side view with the true surface (first frame, the poster), swing out to the orbit view and back.
+
+Outputs: <out>/gt_clip_1080p.mp4 (H.264), <out>/frames/*.png (four stills per scene),
+<out>/gt_gif_source.mp4, the GIF and <out>/gif_sheet.png (four frames of the GIF).
 
 Needs pyvista, numpy, pillow, ffmpeg and a display (Xvfb is enough). One command with Docker:
   tools/render_gt_clip.sh
@@ -27,13 +30,16 @@ import sys
 
 import numpy as np
 
-CAPTION = 'Red: depth the camera reported confidently, but it is the wall behind the glass.'
-CAPTION_GREEN = 'Green: where the glass surface really is (ground truth).'
+CAPTION = 'Red: depth the camera reported confidently. It is the table behind the glass.'
 SOURCE = 'ClearGrasp D435, ground truth'
-T_ORBIT, T_MOVE, T_HOLD, T_FADE, T_GREEN = 5.0, 2.0, 2.5, 1.0, 2.5
-T_SCENE = T_ORBIT + T_MOVE + T_HOLD + T_FADE + T_GREEN
+LEGEND = ('wrong (reads behind the glass)', 'correct', 'true glass surface (ground truth)',
+          'not glass')
+T_ORBIT, T_MOVE, T_SIDE, T_FADE, T_GREEN = 5.0, 2.0, 0.5, 1.0, 4.5
+T_SCENE = T_ORBIT + T_MOVE + T_SIDE + T_FADE + T_GREEN
+G_HOLD, G_SWING, G_END = 2.0, 2.5, 1.0  # GIF loop: hold, swing out, swing back, hold
+T_GIF = G_HOLD + 2 * G_SWING + G_END
 ORBIT_AZIM, SIDE_AZIM, ORBIT_ELEV, SIDE_ELEV = 55.0, 90.0, 22.0, 2.0
-BAR_H = 108  # caption bar height at 1080p
+BAR_H = 84  # caption bar height at 1080p
 FONTS = ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
          '/System/Library/Fonts/Supplemental/Arial.ttf')
 
@@ -104,10 +110,16 @@ def scene_frame(obj, outside, surface):
     return focus, up, back, side, elev0, local.max(axis=0) - local.min(axis=0)
 
 
-def shot(t, elev0, extent, aspect):
-    """Camera and layer state at scene time t: (azimuth deg, elevation deg, half-width, green)."""
+def framing(extent, aspect):
+    """Half-widths in metres of the orbit view and of the side view."""
     wide = max(0.20, float(max(extent[0], extent[1])) / 2.0 + 0.10)
     tight = max(0.13, float(extent[0]) / 2.0 + 0.07, (float(extent[2]) / 2.0 + 0.04) * aspect)
+    return wide, tight
+
+
+def shot(t, elev0, extent, aspect):
+    """Clip state at scene time t: (azimuth deg, elevation deg, half-width, green opacity)."""
+    wide, tight = framing(extent, aspect)
     if t < T_ORBIT:
         s = smooth(t / T_ORBIT)
         return (ORBIT_AZIM * s, elev0 + (ORBIT_ELEV - elev0) * s, wide, 0.0)
@@ -116,8 +128,17 @@ def shot(t, elev0, extent, aspect):
         s = smooth(t / T_MOVE)
         return (ORBIT_AZIM + (SIDE_AZIM - ORBIT_AZIM) * s,
                 ORBIT_ELEV + (SIDE_ELEV - ORBIT_ELEV) * s, wide + (tight - wide) * s, 0.0)
-    t -= T_MOVE + T_HOLD
+    t -= T_MOVE + T_SIDE
     return (SIDE_AZIM, SIDE_ELEV, tight, smooth(t / T_FADE))
+
+
+def gif_shot(t, elev0, extent, aspect):
+    """GIF state at time t: starts and ends on the side view, green always shown."""
+    wide, tight = framing(extent, aspect)
+    t -= G_HOLD
+    s = smooth(t / G_SWING) if t < G_SWING else 1.0 - smooth((t - G_SWING) / G_SWING)
+    return (SIDE_AZIM + (ORBIT_AZIM - SIDE_AZIM) * s,
+            SIDE_ELEV + (ORBIT_ELEV - SIDE_ELEV) * s, tight + (wide - tight) * s, 1.0)
 
 
 def camera_pose(azim, elev, half, frame, aspect):
@@ -136,8 +157,8 @@ def load_font(size):
     return ImageFont.load_default()
 
 
-def annotate(view, scene, green, caption, scale):
-    """Put the 3D view above a plain caption bar; scene label and data source in small text."""
+def annotate(view, scene, colours, caption, scale):
+    """Put the 3D view above a plain caption bar; scene label, data source and a small legend."""
     from PIL import Image, ImageDraw
     vh, w = view.shape[:2]
     bar = int(BAR_H * scale)
@@ -146,19 +167,44 @@ def annotate(view, scene, green, caption, scale):
     d = ImageDraw.Draw(im)
     big, small = load_font(int(34 * scale)), load_font(int(24 * scale))
     d.line([0, vh, w, vh], fill=(60, 60, 60), width=1)
-    d.text((w // 2, vh + int(34 * scale)), caption, font=big, fill=(255, 255, 255), anchor='mm')
+    d.text((w // 2, vh + bar // 2), caption, font=big, fill=(255, 255, 255), anchor='mm')
     grey = (200, 200, 200)
-    d.text((int(28 * scale), int(22 * scale)), f'Scene {scene}', font=small, fill=grey)
+    d.text((int(28 * scale), int(22 * scale)), f'Scene {int(scene)}', font=small, fill=grey)
     d.text((int(28 * scale), int(54 * scale)), SOURCE, font=small, fill=grey)
-    if green > 0.0:
-        c = tuple(int(v * green) for v in (0, 200, 110))
-        d.text((w // 2, vh + int(80 * scale)), CAPTION_GREEN, font=load_font(int(29 * scale)),
-               fill=c, anchor='mm')
+    # legend, top right: one colour square and one line of text per layer
+    sq, row = int(20 * scale), int(34 * scale)
+    x0 = w - int(28 * scale) - sq - int(12 * scale) - int(max(d.textlength(t, font=small)
+                                                               for t in LEGEND))
+    pad = int(12 * scale)
+    d.rectangle([x0 - pad, int(24 * scale) - pad, w, int(24 * scale) + len(LEGEND) * row],
+                fill=(0, 0, 0))
+    for n, (colour, text) in enumerate(zip(colours, LEGEND)):
+        y = int(24 * scale) + n * row
+        d.rectangle([x0, y, x0 + sq, y + sq], fill=tuple(colour))
+        d.text((x0 + sq + int(12 * scale), y + sq // 2), text, font=small, fill=grey,
+               anchor='lm')
     return np.asarray(im)
 
 
+def encoder(path, w, h, fps, crf):
+    return subprocess.Popen(
+        ['ffmpeg', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24',
+         '-s', f'{w}x{h}', '-r', str(fps), '-i', '-', '-c:v', 'libx264', '-preset', 'slow',
+         '-crf', str(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(path)],
+        stdin=subprocess.PIPE)
+
+
+def finish(enc, path):
+    enc.stdin.close()
+    if enc.wait() != 0:
+        sys.exit(f'ffmpeg failed while encoding {path}')
+    print(f'wrote {path}', flush=True)
+
+
 def render(a):
+    """Render the clip, the stills and the GIF source. Returns the path of the GIF source."""
     import pyvista as pv
+    from PIL import Image
     g = load_gt_module()
     z = np.load(a.sidecar)
     fx, fy, cx, cy = (float(v) for v in z['k'])
@@ -168,19 +214,13 @@ def render(a):
     vh = h - int(BAR_H * scale)  # the 3D view sits above the caption bar
     out = Path(a.out)
     (out / 'frames').mkdir(parents=True, exist_ok=True)
-    mp4 = out / 'gt_clip_1080p.mp4'
-    enc = subprocess.Popen(
-        ['ffmpeg', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24',
-         '-s', f'{w}x{h}', '-r', str(a.fps), '-i', '-', '-c:v', 'libx264', '-preset', 'slow',
-         '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(mp4)],
-        stdin=subprocess.PIPE)
     pl = pv.Plotter(off_screen=True, window_size=(w, vh), lighting='none')
     pl.set_background('black')
     pl.camera.parallel_projection = True  # a true side elevation: gaps are not foreshortened
-    stills = {0.0: 'orbit_start', T_ORBIT * 0.6: 'orbit', T_ORBIT + T_MOVE + 1.0: 'side',
-              T_SCENE - 1.0: 'side_true_surface'}
-    n_scene = int(round(T_SCENE * a.fps))
-    for scene in a.scenes.split(','):
+    legend = (g.COLOURS[g.WRONG], g.COLOURS[g.CORRECT], g.SURFACE_RGB, g.COLOURS[g.OUTSIDE])
+
+    def load(scene):
+        """Put one scene into the plotter. Returns (scene id, frame, true-surface actor)."""
         match = [i for i, sid in enumerate(ids) if sid.endswith(scene)]
         if not match:
             sys.exit(f'scene {scene} is not in {a.sidecar} (it has {", ".join(ids)})')
@@ -205,46 +245,65 @@ def render(a):
         surface = pl.add_points(
             true_surface, color=[v / 255.0 for v in g.SURFACE_RGB],
             point_size=5.0 * scale, render_points_as_spheres=False, lighting=False)
-        still_at = {int(round(t * a.fps)): name for t, name in stills.items()}
-        for k in range(n_scene):
-            azim, elev, half, green = shot(k / a.fps, frame[4], frame[5], w / vh)
-            pos, focal, up, pscale = camera_pose(azim, elev, half, frame, w / vh)
-            pl.camera.position, pl.camera.focal_point, pl.camera.up = pos, focal, up
-            pl.camera.parallel_scale = pscale
-            pl.camera.clipping_range = (0.01, 20.0)
-            surface.SetVisibility(green > 0.0)
-            surface.GetProperty().SetOpacity(green)
-            pl.render()
-            img = annotate(pl.screenshot(return_img=True)[:, :, :3], ids[i], green, a.caption,
-                           scale)
+        return ids[i], frame, surface
+
+    def draw(sid, frame, surface, state):
+        azim, elev, half, green = state
+        pos, focal, up, pscale = camera_pose(azim, elev, half, frame, w / vh)
+        pl.camera.position, pl.camera.focal_point, pl.camera.up = pos, focal, up
+        pl.camera.parallel_scale = pscale
+        pl.camera.clipping_range = (0.01, 20.0)
+        surface.SetVisibility(green > 0.0)
+        surface.GetProperty().SetOpacity(green)
+        pl.render()
+        return annotate(pl.screenshot(return_img=True)[:, :, :3], sid, legend, a.caption, scale)
+
+    mp4 = out / 'gt_clip_1080p.mp4'
+    enc = encoder(mp4, w, h, a.fps, 18)
+    stills = {0.0: 'orbit_start', T_ORBIT * 0.6: 'orbit', T_ORBIT + T_MOVE + 0.25: 'side',
+              T_SCENE - 1.0: 'side_true_surface'}
+    still_at = {int(round(t * a.fps)): name for t, name in stills.items()}
+    scenes = a.scenes.split(',')
+    for scene in scenes:
+        sid, frame, surface = load(scene)
+        for k in range(int(round(T_SCENE * a.fps))):
+            img = draw(sid, frame, surface, shot(k / a.fps, frame[4], frame[5], w / vh))
             enc.stdin.write(np.ascontiguousarray(img).tobytes())
             if k in still_at:
-                from PIL import Image
-                path = out / 'frames' / f'{ids[i]}_{still_at[k]}.png'
+                path = out / 'frames' / f'{sid}_{still_at[k]}.png'
                 Image.fromarray(img).save(path)
                 print(f'wrote {path}', flush=True)
-        print(f'scene {ids[i]}: {n_scene} frames', flush=True)
+    finish(enc, mp4)
+
+    src = out / 'gt_gif_source.mp4'
+    enc = encoder(src, w, h, a.gif_fps, 10)
+    sid, frame, surface = load(a.gif_scene or scenes[-1])
+    for k in range(int(round(T_GIF * a.gif_fps))):
+        img = draw(sid, frame, surface, gif_shot(k / a.gif_fps, frame[4], frame[5], w / vh))
+        enc.stdin.write(np.ascontiguousarray(img).tobytes())
     pl.close()
-    enc.stdin.close()
-    if enc.wait() != 0:
-        sys.exit('ffmpeg failed while encoding the mp4')
-    print(f'wrote {mp4}')
-    return mp4
+    finish(enc, src)
+    return src
 
 
-def make_gif(a, mp4):
-    """Cut the strongest part (end of the orbit, side view, true surface) into the README GIF."""
+def make_gif(a, src):
+    """Turn the GIF source into the README GIF and a four-frame contact sheet of it."""
     gif = Path(a.gif)
     gif.parent.mkdir(parents=True, exist_ok=True)
-    vf = (f'fps={a.gif_fps},scale={a.gif_width}:-1:flags=lanczos,split[x][y];'
+    vf = (f'scale={a.gif_width}:-1:flags=lanczos,split[x][y];'
           '[x]palettegen=max_colors=64:stats_mode=diff[p];[y][p]paletteuse=dither=none')
-    subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-ss', str(a.gif_start),
-                    '-t', str(a.gif_duration), '-i', str(mp4), '-vf', vf, '-loop', '0',
-                    str(gif)], check=True)
+    subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', str(src), '-vf', vf,
+                    '-loop', '0', str(gif)], check=True)
+    n = int(round(T_GIF * a.gif_fps))
+    picks = '+'.join(f'eq(n,{k})' for k in (0, n // 3, 2 * n // 3, n - 1))
+    sheet = Path(a.out) / 'gif_sheet.png'
+    subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', str(gif), '-vf',
+                    f"select='{picks}',tile=2x2", '-frames:v', '1', '-update', '1',
+                    str(sheet)], check=True)
     size = gif.stat().st_size / 1e6
-    print(f'wrote {gif} ({size:.1f} MB)')
+    print(f'wrote {gif} ({size:.1f} MB) and {sheet}')
     if size > 8.0:
-        sys.exit('GIF is over 8 MB: lower --gif-fps, --gif-width or --gif-duration')
+        sys.exit('GIF is over 8 MB: lower --gif-fps or --gif-width')
 
 
 def main(argv=None):
@@ -258,16 +317,13 @@ def main(argv=None):
     ap.add_argument('--width', type=int, default=1920)
     ap.add_argument('--height', type=int, default=1080)
     ap.add_argument('--fps', type=int, default=30)
-    ap.add_argument('--gif-start', type=float, default=T_SCENE + T_ORBIT - 1.5,
-                    help='start of the GIF cut in the mp4, seconds (default: second scene, '
-                         'from the end of its orbit)')
-    ap.add_argument('--gif-duration', type=float, default=T_SCENE - T_ORBIT + 1.5)
-    ap.add_argument('--gif-fps', type=int, default=12)
+    ap.add_argument('--gif-scene', default=None, help='scene of the GIF (default: the last one)')
+    ap.add_argument('--gif-fps', type=int, default=10)
     ap.add_argument('--gif-width', type=int, default=800)
-    ap.add_argument('--gif-only', action='store_true', help='reuse the mp4, only cut the GIF')
+    ap.add_argument('--gif-only', action='store_true',
+                    help='reuse <out>/gt_gif_source.mp4, only convert it to the GIF')
     a = ap.parse_args(argv)
-    mp4 = Path(a.out) / 'gt_clip_1080p.mp4' if a.gif_only else render(a)
-    make_gif(a, mp4)
+    make_gif(a, Path(a.out) / 'gt_gif_source.mp4' if a.gif_only else render(a))
 
 
 if __name__ == '__main__':
