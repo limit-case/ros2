@@ -12,7 +12,7 @@ Red: confidently wrong (it is the table behind the glass). Green: where the glas
 
 On glass, depth cameras don't just go blank. They often return a confident depth of whatever is behind it.
 `limit_case_ros2` sits between your depth driver and Nav2 or MoveIt, flags those pixels, and
-publishes the suspected glass as an obstacle cloud.
+publishes the suspected regions as an experimental obstacle cloud.
 
 v0.1 is a depth-only baseline: it removes 14.6% of the wrong glass pixels on ClearGrasp D435
 at 7.4 ms per 1280x720 frame (core filter), and [Results](#results) explains why depth alone can't do much more.
