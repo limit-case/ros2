@@ -1,21 +1,24 @@
 # limit_case_ros2
 
+Detect silent depth failures on transparent objects, in ROS 2.
+
 [![ci](https://github.com/limit-case/ros2/actions/workflows/ci.yml/badge.svg)](https://github.com/limit-case/ros2/actions/workflows/ci.yml)
-
-A depth camera missed a clear surface, returned the wall behind it, and the arm it was guiding broke my finger.
-
-**Depth alone can't see glass. We measured why.**
+[![ROS 2: Jazzy | Humble](https://img.shields.io/badge/ROS%202-Jazzy%20%7C%20Humble-22314E)](https://docs.ros.org/)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
 ![Raw depth cloud coloured by ground truth, seen from the side: the red points lie behind the glass, the green true surface stands in front of them](docs/media/gt_error.gif)
+<sub>Raw RealSense D435 depth on a ClearGrasp test scene, coloured by ground truth.
+Red: confidently wrong (it is the table behind the glass). Green: where the glass really is.</sub>
 
-<sub>Raw D435 depth of one [ClearGrasp](https://github.com/Shreeyak/cleargrasp) test scene (Sajjan et al., ICRA 2020,
-Apache-2.0), coloured by its ground truth: red = wrong (it reads the table behind the glass), white = correct,
-green = true glass surface, grey = not glass. Rendered by [`tools/render_gt_clip.sh`](tools/render_gt_clip.sh).</sub>
+Depth cameras don't go blank on glass. They return a confident depth of whatever is behind it.
+`limit_case_ros2` sits between your depth driver and Nav2 or MoveIt, flags those pixels, and
+publishes the suspected glass as an obstacle cloud.
 
-`limit_case_ros2` is a ROS 2 node that sits between a depth camera driver and Nav2 or MoveIt and flags **silent
-depth failures on transparent objects**, pixels where the camera confidently reports the surface *behind* the glass;
-v0.1 is an honest depth-only baseline that removes **14.6%** of them on ClearGrasp D435 test, at **7.4 ms** per frame.
+v0.1 is a depth-only baseline: it removes 14.6% of the wrong glass pixels on ClearGrasp D435
+at 7.4 ms per 1280x720 frame, and [Results](#results) explains why depth alone can't do much more.
 Research-grade, not safety certified.
+
+## Results
 
 | ClearGrasp set (5% tolerance) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
 |---|---|---|---|---|
