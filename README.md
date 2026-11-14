@@ -100,7 +100,10 @@ reads **farther** than that boundary, so in a depth image it looks like a **basi
 5. Outputs: filtered depth, mask, and a point cloud of the fill surface back-projected with the intrinsics.
 
 Dropping pixels is not enough: Nav2 and MoveIt discard invalid pixels, so glass would become *unknown* space,
-not an obstacle. The `suspected_obstacles` cloud is what makes the robot avoid it.
+not an obstacle. The `suspected_obstacles` cloud is meant to make the robot treat the glass as an obstacle, but
+treat it as **experimental**: in a headless Nav2 costmap test on the tabletop demo scenes the cloud was placed at
+the depth of the surface around the glass (the table), so it added no obstacle cells over the glass, while false
+flags added phantom cells. Vertical glass (doors, partitions) is untested.
 
 Why this gets only part of the way (numbers and the ablation in [`docs/results.md`](docs/results.md)):
 
@@ -118,7 +121,7 @@ Why this gets only part of the way (numbers and the ablation in [`docs/results.m
 | `color/image` (sub) | `sensor_msgs/Image` | optional, only if `use_rgb: true` (ApproximateTime, slop 0.03 s) |
 | `/limit_case/depth/filtered` | `sensor_msgs/Image` | same encoding; flagged pixels 0 (`16UC1`) / NaN (`32FC1`) |
 | `/limit_case/mask` | `sensor_msgs/Image` | `mono8`, 255 = suspected see-through |
-| `/limit_case/suspected_obstacles` | `sensor_msgs/PointCloud2` | estimated glass surface, depth frame |
+| `/limit_case/suspected_obstacles` | `sensor_msgs/PointCloud2` | experimental: flagged pixels at the depth of the surface around the region, not of the glass itself; depth frame |
 | `/diagnostics` | `diagnostic_msgs/DiagnosticArray` | flagged %, regions, latency mean/p95, input rate |
 
 All outputs reuse the input depth header.
@@ -150,6 +153,11 @@ the filtered depth cloud (`marking: true, clearing: true`) and `/limit_case/susp
 (`marking: true, clearing: false`). **Clearing must be off for the glass cloud**: on the next frame the glass reads
 as far-away free space, so a clearing source would raytrace through the glass and erase the cells just marked.
 
+Caveat: this configuration is advice, not a demonstrated result. In a headless Nav2 costmap test on the tabletop
+demo scenes the cloud did not add obstacle cells over the glass (it sits at the depth of the table around the
+objects), and false flags added phantom obstacle cells. Vertical glass such as doors and partitions has not been
+tested. Do not count on this cloud to keep a robot away from glass.
+
 ## Limitations
 
 - **Depth-only enclosure fails on most glass.** The filter needs glass to be enclosed by returned, nearer pixels.
@@ -161,6 +169,10 @@ as far-away free space, so a clearing source would raytrace through the glass an
   published as obstacles, not just dropped from the depth image. In the demo bag many of the orange points sit on a
   dark case and a far wall, not on the glass (see `docs/demo_scenes.md`). Use this node where a spurious obstacle is
   cheaper than a collision with glass.
+- **The `suspected_obstacles` cloud is experimental and did not protect the glass in our costmap test.** It is
+  placed at the depth of the surface around a flagged region, not at the glass surface. In a headless Nav2
+  costmap test on the tabletop demo scenes that surface is the table, so the cloud added no obstacle cells over
+  the glass, while false flags added phantom cells. Vertical glass (doors, partitions) is untested.
 - **Tuned on D435 val only.** One camera, one dataset, small objects on a table. The val budget (correct lost
   <= 5%) did not hold on D435 test (7.9%). D415 and L515 profiles are untuned; nothing here was measured on doors,
   windows or walls.
