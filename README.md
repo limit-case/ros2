@@ -20,11 +20,20 @@ Research-grade, not safety certified.
 
 ## Results
 
-| ClearGrasp set (5% tolerance) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
+| Set (5% tolerance) | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
 |---|---|---|---|---|
-| D435 test (23 scenes), run once | 23.9% -> 22.6% | 14.6% | 7.9% | 8.7% |
-| D435 val (173 scenes), the tuning set | 51.3% -> 48.6% | 14.6% | 4.7% | 6.0% |
-| D415 test (90 scenes), run once | 36.9% -> 35.2% | 11.4% | 4.5% | 8.7% |
+| ClearGrasp D435 test (23 scenes), run once | 23.9% -> 22.6% | 14.6% | 7.9% | 8.7% |
+| ClearGrasp D435 val (173 scenes), the tuning set | 51.3% -> 48.6% | 14.6% | 4.7% | 6.0% |
+| ClearGrasp D415 test (90 scenes), run once | 36.9% -> 35.2% | 11.4% | 4.5% | 8.7% |
+| TransCG D435 test (52 scenes, held out, run once) | 13.9% -> 10.8% | 28.6% | 4.5% | 2.4% |
+
+> Evaluated on [TransCG](https://graspnet.net/transcg): Fang, H., Fang, H.-S., Xu, S., Lu, C. "TransCG: A Large-Scale Real-World Dataset for Transparent Object Depth Completion and a Grasping Baseline." IEEE RA-L 7(3):7383-7390, 2022. doi:10.1109/LRA.2022.3183256
+> Licensed CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International),
+> non-commercial. No TransCG data is redistributed here.
+
+The TransCG row is from `results/transcg_d435_test_summary.csv`. TransCG has fewer missing glass pixels (27.1%,
+against 32.2% to 62.5% in ClearGrasp), which is consistent with the explanation that holes around the glass stop
+the depth-only filter, but it is not proof.
 
 Most wrong pixels survive. Sources, definitions, latency details and the reason depth alone falls short:
 [`docs/results.md`](docs/results.md).
@@ -189,14 +198,17 @@ Seeded with: RealSense D415, D435, L515.
 ## Roadmap
 
 - v0.1 (this release): honest depth-only baseline.
-- Next, v0.2: an RGB mask proposes the glass region and depth verifies the too-far pixels inside it. Two settings
-  were each run once on D435 test / D415 test (`results/eval_rgb_proposal_*_summary.csv`):
-  - The setting selected on val (5 px ring, 3 cm; 29.3% wrong removed on val) **overfit**: 8.2% / 10.3% wrong
-    removed, below v0.1's 14.6% / 11.4%.
-  - The untuned setting declared before the test run (v0.1 thresholds, 15 px ring): 47.4% / 20.4% wrong removed,
-    7.2% / 5.4% correct lost, 0.4% / 0.4% outside-mask flagged.
-  - Preferring the untuned setting is now a test-informed choice, so v0.2 fixes the selection protocol and confirms
-    once on fresh data ([`docs/v0.2_protocol.md`](docs/v0.2_protocol.md)).
+- v0.2, RGB-proposal mode (an RGB mask proposes the glass region, depth verifies the too-far pixels inside it):
+  the pre-registered criterion **FAILED** on held-out data, the 52 scenes of the TransCG D435 test split, run once
+  ([`docs/v0.2_protocol.md`](docs/v0.2_protocol.md), `results/transcg_d435_test_summary.csv`).
+  - Wrong removed: RGB 35.7% against v0.1 28.6%, ratio 1.25 (95% CI 1.06 to 1.48 over scenes). The bar was 1.5.
+  - Correct lost: RGB 11.0% against v0.1 4.5%. The guardrail (at most 2 points more than v0.1) failed.
+  - Outside-mask flagged: RGB 2.2% against v0.1 2.4%.
+  - Proposal IoU with the true mask is 45.9%: the mask network, trained on synthetic images only, is the
+    bottleneck.
+  - So the RGB mode stays experimental and off by default. The earlier ClearGrasp test runs of this method are in
+    `results/eval_rgb_proposal_*_summary.csv`; they were not a clean held-out result.
+  - TransCG citation and licence: see [Results](#results).
 - Later: Gazebo glass simulation plugin, remote rosbag reports.
 
 ## Citation and licences
@@ -214,10 +226,10 @@ If you use this, please cite GlassBench:
 ```
 
 - Code: Apache-2.0, see [LICENSE](LICENSE).
-- [ClearGrasp](https://github.com/Shreeyak/cleargrasp) data (all numbers above): Apache-2.0. The demo bag and its
-  ground-truth sidecar are derived from ClearGrasp (Sajjan et al., ICRA 2020) and ship with the attribution in
+- [ClearGrasp](https://github.com/Shreeyak/cleargrasp) data (all numbers above except the TransCG ones): Apache-2.0.
+  The demo bag and its ground-truth sidecar are derived from ClearGrasp (Sajjan et al., ICRA 2020) and ship with the attribution in
   [NOTICE](NOTICE).
 - [TransCG](https://graspnet.net/transcg): CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike
   4.0 International), **non-commercial**. Fang, H., Fang, H.-S., Xu, S., Lu, C. "TransCG: A Large-Scale Real-World Dataset for Transparent Object Depth Completion and a Grasping Baseline." IEEE RA-L 7(3):7383-7390, 2022. doi:10.1109/LRA.2022.3183256
-  It may be evaluated locally; its images, per-image data and anything rendered from them are never committed or
-  shipped here.
+  Only pooled summary percentages are published here (`results/transcg_d435_test_summary.csv`); its images,
+  per-image data and anything rendered from them are never committed or shipped.
