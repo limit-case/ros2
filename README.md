@@ -10,12 +10,12 @@ Detect silent depth failures on transparent objects, in ROS 2.
 <sub>Raw RealSense D435 depth on a ClearGrasp test scene, coloured by ground truth.
 Red: confidently wrong (it is the table behind the glass). Green: where the glass really is.</sub>
 
-Depth cameras don't go blank on glass. They return a confident depth of whatever is behind it.
+On glass, depth cameras don't just go blank. They often return a confident depth of whatever is behind it.
 `limit_case_ros2` sits between your depth driver and Nav2 or MoveIt, flags those pixels, and
 publishes the suspected glass as an obstacle cloud.
 
 v0.1 is a depth-only baseline: it removes 14.6% of the wrong glass pixels on ClearGrasp D435
-at 7.4 ms per 1280x720 frame, and [Results](#results) explains why depth alone can't do much more.
+at 7.4 ms per 1280x720 frame (core filter), and [Results](#results) explains why depth alone can't do much more.
 Research-grade, not safety certified.
 
 ## Results
