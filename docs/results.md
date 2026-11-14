@@ -2,7 +2,9 @@
 
 Every number here and in the README comes from `results/*.csv`, produced by `filter_cli` through
 `scripts/eval_glassbench.py`. Data: [ClearGrasp](https://github.com/Shreeyak/cleargrasp) real images (Sajjan et al.,
-ICRA 2020, Apache-2.0), measured with the [GlassBench](https://github.com/limit-case/glassbench) rules.
+ICRA 2020, Apache-2.0), measured with the [GlassBench](https://github.com/limit-case/glassbench) rules. The one
+exception is the held-out TransCG run ([below](#held-out-transcg-d435-test)), whose pooled numbers are in
+`results/transcg_d435_test_summary.csv`.
 
 v0.1 is an **honest depth-only baseline**. On ClearGrasp D435 test (1280x720) the filter removes
 **14.6%** of the confidently wrong glass pixels, loses **7.9%** of the correct ones, and flags
@@ -20,6 +22,28 @@ Core latency: 7.4 ms mean, 7.6 ms p95 per 1280x720 frame (D435 test, `downsample
 
 Second camera, RealSense D415 test (90 scenes, run once, same `realsense_d435.yaml` profile, native 848x480):
 36.9% -> 35.2% wrong among returned, 11.4% wrong removed, 4.5% correct lost, 8.7% outside-mask flagged.
+
+## Held out: TransCG D435 test
+
+A different dataset, never used for tuning, run once on 2026-11-14 under the frozen protocol
+([`v0.2_protocol.md`](v0.2_protocol.md)): all 52 scenes of the official test split, 11766 D435 views, same
+`realsense_d435.yaml` profile, tolerance 5%.
+
+| Set | Wrong among returned (raw -> after) | Wrong pixels removed | Correct pixels lost | Outside-mask flagged |
+|---|---|---|---|---|
+| TransCG D435 test (52 scenes, held out, run once), v0.1 | 13.9% -> 10.8% | 28.6% | 4.5% | 2.4% |
+
+> Evaluated on [TransCG](https://graspnet.net/transcg): Fang, H., Fang, H.-S., Xu, S., Lu, C. "TransCG: A Large-Scale Real-World Dataset for Transparent Object Depth Completion and a Grasping Baseline." IEEE RA-L 7(3):7383-7390, 2022. doi:10.1109/LRA.2022.3183256
+> Licensed CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International),
+> non-commercial. No TransCG data is redistributed here.
+
+Source: `results/transcg_d435_test_summary.csv` (pooled values only, rows `v01`), written by
+`scripts/eval_transcg.py`. 95% bootstrap intervals over scenes: wrong removed 23.6% to 33.9%, correct lost 3.1% to
+6.0%, outside-mask flagged 1.9% to 2.9%.
+
+TransCG has fewer missing glass pixels (27.1%, against 32.2% to 62.5% in ClearGrasp), which is consistent with the
+explanation [below](#why-depth-alone-misses-glass) that holes around the glass stop the depth-only filter. It is
+not proof: the two datasets differ in objects, backgrounds and ground truth as well.
 
 ## Sources
 
@@ -80,5 +104,28 @@ Wrong removed / correct lost / outside-mask flagged, in %. Each test set was run
 | RGB, untuned (v0.1 thresholds, 15 px ring) | 44.5 / 8.6 / 0.3 | 47.4 / 7.2 / 0.4 | 20.4 / 5.4 / 0.4 | `results/eval_rgb_proposal_*_v01thresh_summary.csv` |
 
 The val-selected setting overfit: it removes fewer wrong pixels than v0.1 on both test sets. The untuned setting
-transferred, but preferring it is now a test-informed choice, not a clean held-out result. v0.2 confirms once on
-fresh data: [`v0.2_protocol.md`](v0.2_protocol.md).
+transferred, but preferring it is a test-informed choice, not a clean held-out result. So the untuned setting was
+frozen and run once on fresh data ([`v0.2_protocol.md`](v0.2_protocol.md)).
+
+### Held-out result: the pre-registered criterion FAILED
+
+TransCG D435 test, 52 scenes, run once (`results/transcg_d435_test_summary.csv`; intervals are the 95% bootstrap
+over scenes):
+
+| Metric | RGB proposal | v0.1 depth-only |
+|---|---|---|
+| Wrong removed | 35.7% (31.9 to 40.0) | 28.6% (23.6 to 33.9) |
+| Correct lost | 11.0% (8.2 to 13.6) | 4.5% (3.1 to 6.0) |
+| Outside-mask flagged | 2.2% (1.7 to 2.6) | 2.4% (1.9 to 2.9) |
+| Wrong among returned (raw -> after) | 13.9% -> 10.4% | 13.9% -> 10.8% |
+
+- Ratio of wrong removed: 1.25 (1.06 to 1.48). The bar was 1.5, for the point and for the lower bound: failed.
+- Correct lost had to stay within 2 points of v0.1: failed.
+- Outside-mask flagged had to be lower than v0.1: held.
+
+**Verdict: FAIL.** The RGB mode stays experimental and off by default.
+
+The proposal mask overlaps the true mask with an IoU of 45.9%, and 73.2% of the wrong pixels lie inside it. The
+mask network was trained on synthetic images only and never saw TransCG, so mask quality is the likely bottleneck;
+no experiment here separates the mask from the depth check. Citation and licence of TransCG:
+[above](#held-out-transcg-d435-test).
