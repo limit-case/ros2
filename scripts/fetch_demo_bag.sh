@@ -7,7 +7,7 @@
 set -euo pipefail
 VERSION=v0.1.0
 URL=https://github.com/limit-case/ros2/releases/download/$VERSION/demo_bag.tar.gz
-SHA256=cda0f9186a23af315a4cdaaead4f8eafc75de34967107a83615e43bf6fbfcec4
+SHA256=7a7a2e563c72bf473c42d3e7d503c51895708b843cbe32c4342c7cb5bae7edb3
 DEST=.
 LOCAL=
 while [ $# -gt 0 ]; do
